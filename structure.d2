@@ -1,0 +1,101 @@
+Client
+User
+auction: Auction
+Lot
+bidder: Bidder
+bid: Bid
+
+bidder.shape: circle
+
+BidJSON: |json
+  {
+    "user_entity_id": String,
+    "lot_entity_id": String,
+    "amount": Number,
+    "status": Number,
+    "created_at": UNIX Date,
+  }
+|
+
+LotJSON: |json
+  {
+    "auction_entity_id": String,
+    "lot_number": Number,
+    "title": String,
+    "description": String,
+    "status": String,
+    "type": String,
+    "starting_price": Number,
+    "reserved_price": Number,
+    "created_at": UNIX Date,
+    "updated_at": UNIX Date,
+    "extra_data": [
+      { "key": "value" }
+    ],
+    "vendor_bidding": {
+      "enabled": Boolean,
+      "bid_increment": Number,
+      "bid_limit": Number,
+      "timeout": Number,
+    }
+  }
+|
+
+AuctionJSON: |json
+  {
+    "client_entity_id": "string",
+    "title": "string",
+    "description": "string",
+    "youtube_url": "string",
+    "date_from": "unix date",
+    "date_to": "unix date",
+    "status": "string",
+    "type": "string",
+    "is_popular": "bool",
+    "is_top_auction": "bool",
+    "registration_fee": "decimal",
+    "automated": {
+      "enabled": "bool",
+      "soft_closing": {
+        "enabled": "bool",
+        "timeout": "number"
+      }
+    },
+    "contact_details": {
+      "email": "string",
+      "whatsapp": {
+        "country_code": "string",
+        "calling_code": "string",
+        "number": "string"
+      },
+      "phone": {
+        "country_code": "string",
+        "calling_code": "string",
+        "number": "string"
+      }
+    },
+    "location": {
+        "full_address": "string",
+        "latitude": "string",
+        "longitude": "string"
+    },
+    "created_at": "unix date",
+    "updated_at": "unix date",
+    "type": "string",
+    "extra_data": [
+      { "key": "value" }
+    ]
+  }
+|
+
+User -> Client
+Auction -> Client
+Lot -> Auction
+bidder -> User
+bidder -> Client
+bid -> User
+bid -> Lot
+
+BidJSON -> bid
+AuctionJSON -> auction
+LotJSON -> Lot

@@ -1,0 +1,6 @@
+const BID_ACTIVE = "Active";
+const BID_REJECTED = "Rejected";
+
+const BID_STATUSES = [BID_ACTIVE, BID_REJECTED];
+
+export { BID_ACTIVE, BID_REJECTED, BID_STATUSES };

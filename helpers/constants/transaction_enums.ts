@@ -1,0 +1,6 @@
+export const TRANSACTIONS_STATUSES = [
+  'PENDING',
+  'SUCCESS',
+  'REJECTED',
+  'INITIATED',
+];

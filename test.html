@@ -1,0 +1,50 @@
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.27.2/axios.min.js"></script> -->
+
+<!-- Make api call to get a secret -->
+
+<!-- <script>
+  async () => {
+    const response = await axios({
+      method: "post",
+      url: "https://testsecure.peachpayments.com/checkout",
+      headers: {
+        Referer: "http://localhost",
+      },
+      data: {
+        "authentication.entityId": "8ac7a4c77763a51c01776724ea560655",
+        amount: "10.00",
+        currency: "USD",
+        paymentType: "DB",
+        merchantTransactionId: "",
+      },
+    });
+    // .then(function (response) {
+    //   console.log(response);
+    // })
+    // .catch(function (error) {
+    //   console.log(error);
+    // });
+
+    //open new tab
+    window.open("_blank", response.data); //html
+
+    //response.data;
+  };
+</script> -->
+
+<!-- https://testapi.peachpayments.com -->
+
+<form action="https://testsecure.peachpayments.com/checkout" method="POST" accept-charset="utf-8">
+  <!-- <form action="https://testsecure.peachpayments.com/checkout?Referer=http://localhost" method="POST" accept-charset="utf-8"></form> -->
+  <input type="hidden" name="amount" value="2" />
+  <input type="hidden" name="authentication.entityId" value="8ac7a4c77763a51c01776724ea560655" />
+  <input type="hidden" name="currency" value="ZAR" />
+  <!-- <input type="hidden" name="defaultPaymentMethod" value="CARD" /> -->
+  <input type="hidden" name="merchantTransactionId" value="Test1234" />
+  <input type="hidden" name="nonce" value="0000001" />
+  <input type="hidden" name="paymentType" value="DB" />
+  <input type="hidden" name="shopperResultUrl" value="https://webhook.site" />
+  <input type="hidden" name="signature" value="e09e3eacf1984a26ab8073456a18090c7872dbaf22d65ae0086bdb694f11318b" />
+  <!-- <input type="hidden" name="Referer" value="http://localhost" /> -->
+  <input type="submit" value="Continue to Payment Method" />
+</form>
