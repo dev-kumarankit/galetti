@@ -15,15 +15,14 @@ export const getBody = (data, type) => {
   <meta content="telephone=no" name="format-detection" />
   <title>Welcome to Galetti</title>
 </head>
- 
-<body style="margin: 0; padding: 0; margin: auto; font-family: sans-serif, serif, EmojiFont;">
+ <body style="margin: 0; padding: 0; margin: auto; font-family: sans-serif, serif, EmojiFont;">
   <table bgcolor: #ffffff cellspacing="0" border="0" cellpadding="0" width="100%" align="center" >
     <thead>
         <tr>
             <td style="
                   background-color: #F04F23;
                   text-align: center;
-
+ 
                 display: block;
                 padding: 52px;
                   background-repeat: no-repeat;
@@ -37,76 +36,71 @@ export const getBody = (data, type) => {
     </thead>
     <tbody >
         <!-- Welcome Message -->
-
+ 
         <tr>
           <td style=" padding-top: 38px; padding-left: 38px; padding-right: 38px;">
             <p style="font-size: 18px; font-weight: 500; color: #212121;">
                 Dear ${data.bidderName},
             </p>
-
+ 
             <p
               style="font-size: 16px; font-weight: 600; color: #f04f23; margin-top: 8px"
             >
-            Welcome to Galetti
+            Congratulations! This email confirms your registration for the ${
+              data.actioneerName
+            }
             </p>
-
+ 
             <p
               style="font-size: 16px; font-weight: 400; color: #637381; margin-top: 8px"
             >
-            Thank you for registering for this auction ${data.actionHouseName}. Please be advised that our auction manager will be in contact with you shortly regarding your FICA documents as well as the required registration fee
+            Your bidder number is ${data.bidderNumber || ""}
             </p>
-
+            <p
+            style="font-size: 16px; font-weight: 400; color: #637381; margin-top: 8px"
+          >
+          This auction will take place on ${data.actioneeDateAndTime} , ${
+      data.location
+    }
+          </p>
+ 
             <hr  />
           </td>
         </tr>
-
+ 
         <!-- Bidder Details -->
         <tr>
           <td style="padding-left: 38px; padding-right: 38px;">
             <p style="font-size: 18px; font-weight: 500; color: #212121">
-                Auction Details:
+                To login, simply use the app’s biometric login feature. The registration button will turn green confirming your active status.
             </p>
-
-            <p style="font-size: 18px; color: #637381">
-              <strong>Auction Name:</strong> ${data?.actioneerName}
-            </p>
-            <p style="font-size: 18px; color: #637381">
-              <strong>Auction Date & Time:</strong> ${data?.actioneeDateAndTime}
+            <p style="font-size: 18px; font-weight: 500; color: #212121">
+            Please note, our auction manager will contact you shortly to verify your uploaded FICA (Financial Intelligence Centre Act) documents and confirm your registration deposit payment.
+            For urgent queries, please contact our office directly for immediate assistance.
             </p>
             <hr />
           </td>
         </tr>
-
+ 
         <!-- Footer Section -->
         <tr>
           <td style="padding-left: 38px; padding-right: 38px;">
-            <p
-              style="
-                font-size: 16px;
-                font-weight: 600;
-                color: #212121;
-                margin-bottom: 16px;
-              "
-            >
-            For any further queries please contact us directly ${data?.actionHouseEmail}. 
-            </p>
-           <hr/>
+            <p style="font-size: 18px; font-weight: 500; color: #212121; text-align: center">Kind regards,</p>
             <p style="font-size: 16px; font-weight: 600; color: #212121; text-align: center">
-              Regards  The Galetti Team
+                The Galetti Auction Team
             </p>
           </td>
         </tr>
       </tbody>
   </table>
-
+ 
 </body>
  
 </html>`,
     getBidderDetailsTemplateBody: `<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
  
- 
-<head>
+ <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="x-apple-disable-message-reformatting" />
@@ -122,7 +116,7 @@ export const getBody = (data, type) => {
             <td style="
                   background-color: #F04F23;
                   text-align: center;
-
+ 
                 display: block;
                 padding: 52px;
                   background-repeat: no-repeat;
@@ -135,56 +129,20 @@ export const getBody = (data, type) => {
           </tr>
     </thead>
     <tbody >
-        <!-- Welcome Message -->
-
+ 
+ 
         <tr>
           <td style=" padding-top: 38px; padding-left: 38px; padding-right: 38px;">
             <p style="font-size: 18px; font-weight: 500; color: #212121;">
-              Dear ${data.actioneerName},
+                A new bidder has just registered for the ${
+                  data.actionHouseName
+                } with bidder number ${data.bidderNumber || ""}.
             </p>
-
-            <p
-              style="font-size: 16px; font-weight: 600; color: #f04f23; margin-top: 8px"
-            >
-              A new bidder has registered for ${data.actionHouseName}
-            </p>
-
-            <p
-              style="font-size: 16px; font-weight: 400; color: #637381; margin-top: 8px"
-            >
-              Below are their details:
-            </p>
-
-            <hr  />
+ 
+          <hr/>
           </td>
         </tr>
-
-        <!-- Bidder Details -->
-        <tr>
-          <td style="padding-left: 38px; padding-right: 38px;">
-            <p style="font-size: 18px; font-weight: 500; color: #212121">
-              Bidder Details:
-            </p>
-
-            <p style="font-size: 18px; color: #637381">
-              <strong>Name:</strong> ${data.bidderName}
-            </p>
-            <p style="font-size: 18px; color: #637381">
-              <strong>Email:</strong> ${data.bidderEmail}
-            </p>
-            <p style="font-size: 18px; color: #637381">
-              <strong>Phone Number:</strong> ${data.bidderPhoneNumber}
-            </p>
-            <p style="font-size: 18px; color: #637381">
-              <strong>Registered Auction:</strong> ${data.actionHouseName}
-            </p>
-
-
-            <hr />
-          </td>
-        </tr>
-
-        <!-- Footer Section -->
+ 
         <tr>
           <td style="padding-left: 38px; padding-right: 38px;">
             <p
@@ -195,11 +153,12 @@ export const getBody = (data, type) => {
                 margin-bottom: 16px;
               "
             >
-              For any concerns, please log in to your console to view the full
-              details: https://galetti.chantlab.com/#/auctions
+            FICA documents can be viewed in the Chant Lab console under the following link: https://console.chantlab.com/#/console/auctions/auction/${
+              data.auctionId
+            }
             </p>
             <hr/>
-
+ 
             <p style="font-size: 16px; font-weight: 600; color: #212121; text-align: center">
               Regards  The Galetti Team
             </p>
@@ -207,7 +166,7 @@ export const getBody = (data, type) => {
         </tr>
       </tbody>
   </table>
-
+ 
 </body>
  
 </html>`,

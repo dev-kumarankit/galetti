@@ -71,7 +71,7 @@ export class BidderService3 {
           .and("user_entity_id")
           .eq(bidder.user_entity_id)
           .and("registered_auction_id")
-          .not.eq(bidder.registered_auction_id)
+          .eq(bidder.registered_auction_id)
           .return.first()
       : await BidderRepository.search()
           .where("client_entity_id")
@@ -162,7 +162,7 @@ export class BidderService3 {
     const obr = {
       // ob = object bidder
       ...updatedBidder,
-      entity_id: updatedBidder[EntityId],
+      entity_id: updatedBidder[EntityId as any],
     };
 
     return obr;
@@ -206,7 +206,7 @@ export class BidderService3 {
 
     const multi = redisClient.multi();
     for (const b of bidders) {
-      multi.json.del(`BIDDER:${b[EntityId]}`);
+      multi.json.del(`BIDDER:${b[EntityId as any]}`);
     }
     multi.exec();
   }
@@ -220,7 +220,7 @@ export class BidderService3 {
     const multi = redisClient.multi();
     for (const b of bidders) {
       b.is_verified = false;
-      multi.json.set(`BIDDER:${b[EntityId]}`, "$", {
+      multi.json.set(`BIDDER:${b[EntityId as any]}`, "$", {
         ...b,
         created_at: moment(b.created_at.toString())
           .tz("Africa/Johannesburg")
@@ -231,29 +231,42 @@ export class BidderService3 {
     multi.exec();
   }
 
-  public async biddersForClient(client_entity_id: string) {
-    const bidders = await BidderRepository.search() //
-      .where("client_entity_id")
-      .eq(client_entity_id)
-      .return.all();
+  public async biddersForClient({ client_entity_id, auction_entity_id }: any) {
+    let bidders;
 
+    if (auction_entity_id) {
+      bidders = await BidderRepository.search()
+        .where("client_entity_id")
+        .eq(client_entity_id)
+        .where("registered_auction_id")
+        .eq(auction_entity_id)
+        .return.all();
+    } else {
+      bidders = await BidderRepository.search()
+        .where("client_entity_id")
+        .eq(client_entity_id)
+        .return.all();
+    }
+    if (!bidders) {
+      return "please enter the valid data";
+    }
     const user_ids = bidders.map((b) => b.user_entity_id.toString());
     const users = await UserRepository.fetch(user_ids);
 
-    const biddersWithUsers = [];
+    const biddersWithUsers: any = [];
     for (const b of bidders) {
-      const user = users.find((u) => u[EntityId] === b.user_entity_id);
+      const user = users.find((u) => u[EntityId as any] === b.user_entity_id);
 
       const files = await FileRepository.search() //
         .where("bidder_entity_id")
-        .eq(b[EntityId])
+        .eq(b[EntityId as any])
         .and("type")
         .eq("Document")
         .return.all();
 
       biddersWithUsers.push({
         ...b,
-        entity_id: b[EntityId],
+        entity_id: b[EntityId as any],
         has_docs:
           files.findIndex((f) => f.custom_name === "proof_of_id") > -1 &&
           files.findIndex((f) => f.custom_name === "proof_of_address") > -1,
@@ -301,14 +314,14 @@ export class BidderService3 {
     // get all users that are not registered. they are un-registered if they are not inside allBiddersforClient
     const unregisteredUsers = allUsersforClient.filter((ufc) => {
       return !allBiddersforClient.find(
-        (bfc) => bfc.user_entity_id === ufc[EntityId]
+        (bfc) => bfc.user_entity_id === ufc[EntityId as any]
       );
     });
 
     // only return what is needed. mainly to avoid sending back the password, salt, etc
     const users = unregisteredUsers.map((u) => {
       return {
-        entity_id: u[EntityId],
+        entity_id: u[EntityId as any],
         name: u.name,
         surname: u.surname,
         email: u.email,
@@ -393,12 +406,12 @@ export class BidderService3 {
       [(proof_of_id_file?.custom_name ?? "proof_of_id").toString()]:
         proof_of_id_file && {
           ...proof_of_id_file,
-          entity_id: proof_of_id_file[EntityId],
+          entity_id: proof_of_id_file[EntityId as any],
         },
       [(proof_of_address_file?.custom_name ?? "proof_of_address").toString()]:
         proof_of_address_file && {
           ...proof_of_address_file,
-          entity_id: proof_of_address_file[EntityId],
+          entity_id: proof_of_address_file[EntityId as any],
         },
     };
 
@@ -438,7 +451,7 @@ export class BidderService3 {
 
     const files = await FileRepository.search() //
       .where("bidder_entity_id")
-      .eq(bidder[EntityId])
+      .eq(bidder[EntityId as any])
       .return.all();
 
     const has_proof_of_id =
@@ -465,7 +478,7 @@ export class BidderService3 {
       has_proof_of_id,
       has_proof_of_address,
       bidder: {
-        entity_id: bidder?.[EntityId],
+        entity_id: bidder?.[EntityId as any],
         paddle_number: bidder?.paddle_number,
       },
     };
@@ -485,11 +498,11 @@ export class BidderService3 {
       .eq(BID_ACTIVE)
       .return.all();
 
-    const detectedBidders = [];
+    const detectedBidders: any = [];
 
     for (const bid of bids) {
       const existingBidder = detectedBidders.find(
-        (b) => b.user.entity_id === bid.user_entity_id.toString()
+        (b: any) => b.user.entity_id === bid.user_entity_id.toString()
       );
       if (existingBidder) {
         continue; // no need to add the same bidder again
@@ -520,20 +533,20 @@ export class BidderService3 {
       );
 
       if (userForBid.client_entity_id) {
-        // const bidder = await BidderRepository.fetch(userForBid[EntityId]);
+        // const bidder = await BidderRepository.fetch(userForBid[EntityId as any]);
         const bidder = await BidderRepository.search() //
           .where("user_entity_id")
-          .eq(userForBid[EntityId])
+          .eq(userForBid[EntityId as any])
           .return.first();
 
         if (bidder.user_entity_id) {
           detectedBidders.push({
             bidder: {
-              entity_id: bidder[EntityId],
+              entity_id: bidder[EntityId as any],
               paddle_number: bidder.paddle_number,
             },
             user: {
-              entity_id: userForBid[EntityId],
+              entity_id: userForBid[EntityId as any],
               name: userForBid.name,
               surname: userForBid.surname,
             },

@@ -21,6 +21,7 @@
   "dependencies": {
     "@dolbyio/dolbyio-rest-apis-client": "^5.0.1",
     "@google-cloud/storage": "^6.7.0",
+    "@sendgrid/mail": "^8.1.5",
     "agenda": "^4.3.0",
     "api": "^4.5.2",
     "argon2": "^0.28.5",

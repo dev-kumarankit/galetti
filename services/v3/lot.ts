@@ -53,7 +53,7 @@ export class LotService3 {
       created_at: moment().tz("Africa/Johannesburg").unix(),
     };
     const l = await LotRepository.save(obj);
-    const entityId = l[EntityId];
+    const entityId = l[EntityId as any];
 
     console.log("Lot created", entityId);
 
@@ -86,7 +86,7 @@ export class LotService3 {
     };
 
     const l: any = await LotRepository.save(entity_id, objToSave);
-    const entityId = l[EntityId];
+    const entityId = l[EntityId as any];
 
     // Check if the auction is in progress and the vendor_bidding is enabled.
     if (
@@ -117,13 +117,30 @@ export class LotService3 {
     } else if (objToSave.vendor_bidding?.enabled == false) {
       // we need to check if there is any existing vendor bidding job for this lot and remove it.
       // if we save if without vendor bidding enabled, it means we need to remove any existing vendor bidding job.
-      const vendorBiddingJobs = await vendor_bidding_queue.getJobs(["delayed"]);
-      const existingVendorBiddingJob = vendorBiddingJobs.find(
-        (job) => job.data.lot_entity_id === entityId
-      );
-      if (existingVendorBiddingJob) {
-        console.log("Removing existing vendor bidding job");
-        await existingVendorBiddingJob.remove();
+      const withTimeout = (promise, ms) => {
+        return Promise.race([
+          promise,
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Timeout reached")), ms)
+          ),
+        ]);
+      };
+
+      try {
+        const vendorBiddingJobs = await withTimeout(
+          vendor_bidding_queue.getJobs(["delayed"]),
+          10000
+        );
+        const existingVendorBiddingJob = vendorBiddingJobs.find(
+          (job) => job.data.lot_entity_id === entityId
+        );
+
+        if (existingVendorBiddingJob) {
+          console.log("Removing existing vendor bidding job");
+          await existingVendorBiddingJob.remove();
+        }
+      } catch (err) {
+        console.error("Failed to fetch jobs:", err);
       }
     }
 
@@ -141,11 +158,11 @@ export class LotService3 {
     // RedisOM still an entry entity if its not found.
     // So we need to check if an important field exists.
     if (lot.auction_entity_id) {
-      // const entityId = lot[EntityId];
-      lot.entity_id = lot[EntityId];
+      // const entityId = lot[EntityId as any];
+      lot.entity_id = lot[EntityId as any];
 
       // Inject first image for each lot
-      lot.entity_id = lot[EntityId];
+      lot.entity_id = lot[EntityId as any];
 
       const images = await FileRepository.search() //
         .where("lot_entity_id")
@@ -173,7 +190,7 @@ export class LotService3 {
       }
       if (images && images.length > 0) {
         lot.images = images.map((img) => {
-          return { ...img, entity_id: img[EntityId] };
+          return { ...img, entity_id: img[EntityId as any] };
         });
       }
 
@@ -186,7 +203,7 @@ export class LotService3 {
 
       if (documents && documents.length > 0) {
         lot.documents = documents.map((doc) => {
-          return { ...doc, entity_id: doc[EntityId] };
+          return { ...doc, entity_id: doc[EntityId as any] };
         });
       }
 
@@ -204,13 +221,13 @@ export class LotService3 {
       .return.all();
 
     for (let lot of lots) {
-      lot.entity_id = lot[EntityId];
+      lot.entity_id = lot[EntityId as any];
 
       if (get_images) {
         // Inject first image for each lot
         const firstImage = await FileRepository.search() //
           .where("lot_entity_id")
-          .eq(lot[EntityId])
+          .eq(lot[EntityId as any])
           .and("type")
           .eq("Image")
           .sortBy("order", "ASC")
@@ -219,7 +236,7 @@ export class LotService3 {
         if (firstImage?.uploaded_file_url) {
           lot.images = [
             {
-              entity_id: firstImage[EntityId],
+              entity_id: firstImage[EntityId as any],
               uploaded_file_url: firstImage.uploaded_file_url,
             },
           ];
@@ -243,25 +260,29 @@ export class LotService3 {
 
     // Inject first image for each lot
     for (let lot of lots) {
-      lot.entity_id = lot[EntityId];
+      lot.entity_id = lot[EntityId as any];
 
       const firstImage = await FileRepository.search() //
         .where("lot_entity_id")
-        .eq(lot[EntityId])
+        .eq(lot[EntityId as any])
         .sortBy("order", "ASC")
         .return.first();
 
       if (firstImage?.uploaded_file_url) {
         lot.images = [
           {
-            entity_id: firstImage[EntityId],
+            entity_id: firstImage[EntityId as any],
             uploaded_file_url: firstImage.uploaded_file_url,
           },
         ];
       }
 
       // Get all bids for the lot
-      const bidsForLot = await this.bidService.bidsForLot(lot[EntityId], 0, 10);
+      const bidsForLot = await this.bidService.bidsForLot(
+        lot[EntityId as any],
+        0,
+        10
+      );
       // console.log("bidsForLot", bidsForLot);
       lot.bids = bidsForLot;
     }
@@ -284,7 +305,7 @@ export class LotService3 {
       .return.all();
 
     for (const file of files) {
-      multi.del(`FILE:${file[EntityId]}`);
+      multi.del(`FILE:${file[EntityId as any]}`);
     }
 
     multi.exec();
@@ -299,15 +320,15 @@ export class LotService3 {
     const multi = redisClient.multi();
 
     for (const lot of lots) {
-      multi.del(`LOT:${lot[EntityId]}`);
+      multi.del(`LOT:${lot[EntityId as any]}`);
 
       const files = await FileRepository.search() //
         .where("lot_entity_id")
-        .eq(lot[EntityId])
+        .eq(lot[EntityId as any])
         .return.all();
 
       for (const file of files) {
-        multi.del(`FILE:${file[EntityId]}`);
+        multi.del(`FILE:${file[EntityId as any]}`);
       }
     }
 
@@ -335,7 +356,7 @@ export class LotService3 {
     const multi = redisClient.multi();
 
     for (const o of order) {
-      const lot = lots.find((l) => l[EntityId] === o.lot_entity_id);
+      const lot = lots.find((l) => l[EntityId as any] === o.lot_entity_id);
 
       if (lot) {
         multi.json.set(`LOT:${o.lot_entity_id}`, "$", {
@@ -415,7 +436,7 @@ export class LotService3 {
 
       // from the list we need to find the previous, current, next
       let current: any = lots.find(
-        (l) => l[EntityId] === currentLot.lot_entity_id
+        (l) => l[EntityId as any] === currentLot.lot_entity_id
       );
 
       if (current) {
@@ -435,57 +456,57 @@ export class LotService3 {
         if (previous) {
           const image = await FileRepository.search() //
             .where("lot_entity_id")
-            .eq(previous[EntityId])
+            .eq(previous[EntityId as any])
             .and("type")
             .eq("Image")
             .sortBy("order", "ASC")
             .return.first();
 
           if (image) {
-            previous.images = [{ ...image, entity_id: image[EntityId] }];
+            previous.images = [{ ...image, entity_id: image[EntityId as any] }];
           }
         }
 
         if (current) {
           const image = await FileRepository.search() //
             .where("lot_entity_id")
-            .eq(current[EntityId])
+            .eq(current[EntityId as any])
             .and("type")
             .eq("Image")
             .sortBy("order", "ASC")
             .return.first();
 
           if (image) {
-            current.images = [{ ...image, entity_id: image[EntityId] }];
+            current.images = [{ ...image, entity_id: image[EntityId as any] }];
           }
         }
 
         if (next) {
           const image = await FileRepository.search() //
             .where("lot_entity_id")
-            .eq(next[EntityId])
+            .eq(next[EntityId as any])
             .and("type")
             .eq("Image")
             .sortBy("order", "ASC")
             .return.first();
 
           if (image) {
-            next.images = [{ ...image, entity_id: image[EntityId] }];
+            next.images = [{ ...image, entity_id: image[EntityId as any] }];
           }
         }
 
         return {
           previous: previous && {
             ...previous,
-            entity_id: previous[EntityId],
+            entity_id: previous[EntityId as any],
           },
           current: current && {
             ...current,
-            entity_id: current[EntityId],
+            entity_id: current[EntityId as any],
           },
           next: next && {
             ...next,
-            entity_id: next[EntityId],
+            entity_id: next[EntityId as any],
           },
         };
       } else {
@@ -522,7 +543,7 @@ export class LotService3 {
         .sortBy("lot_number", "ASC")
         .return.all();
 
-      let current: any = lots.find((l) => l[EntityId] === lot_entity_id);
+      let current: any = lots.find((l) => l[EntityId as any] === lot_entity_id);
 
       // find the next open lot
       do {
@@ -531,7 +552,7 @@ export class LotService3 {
         );
       } while (current && current.status !== LOT_BIDDING_OPEN);
 
-      nextLotEntityId = current ? current[EntityId] : null;
+      nextLotEntityId = current ? current[EntityId as any] : null;
     }
 
     const currentLot = await CurrentLotRepository.search() //
@@ -541,7 +562,7 @@ export class LotService3 {
 
     if (currentLot) {
       // update the current lot
-      await CurrentLotRepository.save(currentLot[EntityId], {
+      await CurrentLotRepository.save(currentLot[EntityId as any], {
         lot_entity_id: nextLotEntityId,
         auction_entity_id: auction_entity_id,
       });
@@ -575,7 +596,7 @@ export class LotService3 {
     };
 
     const l: any = await LotRepository.save(entity_id, objToSave);
-    const entityId = l[EntityId];
+    const entityId = l[EntityId as any];
 
     const latestBid = await BidRepository.search() //
       .where("lot_entity_id")

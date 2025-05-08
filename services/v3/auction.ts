@@ -11,11 +11,18 @@ import { auction_start_queue } from "../../integration/redis/bull/queues/auction
 import moment from "moment-timezone";
 import { auction_end_queue } from "../../integration/redis/bull/queues/auction_end";
 import { extended_lot_queue } from "../../integration/redis/bull/queues/lot_extended";
-import { AUCTION_COMPLETE, AUCTION_IN_PROGRESS, AUCTION_UPCOMING } from "../../helpers/constants/auction_enums";
+import {
+  AUCTION_COMPLETE,
+  AUCTION_IN_PROGRESS,
+  AUCTION_UPCOMING,
+} from "../../helpers/constants/auction_enums";
 import { Container } from "typedi";
 import { Dolby } from "../../integration/dolby/dolby";
 import { RealTimeCommunication } from "../../helpers/real_time_communication";
-import { LOT_BIDDING_CLOSED, LOT_BIDDING_OPEN } from "../../helpers/constants/lot_enums";
+import {
+  LOT_BIDDING_CLOSED,
+  LOT_BIDDING_OPEN,
+} from "../../helpers/constants/lot_enums";
 import { CurrentLotRepository } from "../../schemas/redis/current_lot";
 import { LotCollection } from "../../schemas/mongo/lot";
 import { FileCollection } from "../../schemas/mongo/file";
@@ -39,7 +46,7 @@ export class AuctionService3 {
     };
 
     const savedObj = await AuctionRepository.save(objToSave);
-    const entityId = savedObj[EntityId];
+    const entityId = savedObj[EntityId as any];
 
     if (objToSave.automated?.enabled) {
       // only schedule if date_from is in the future
@@ -55,8 +62,11 @@ export class AuctionService3 {
             auction_entity_id: entityId,
           },
           {
-            delay: moment(moment(objToSave.date_from)).diff(moment().tz("Africa/Johannesburg"), "milliseconds"),
-          },
+            delay: moment(moment(objToSave.date_from)).diff(
+              moment().tz("Africa/Johannesburg"),
+              "milliseconds"
+            ),
+          }
         );
       } else {
         console.log("Auction is in the past, not scheduling");
@@ -98,7 +108,7 @@ export class AuctionService3 {
 
     if (images && images.length > 0) {
       auction.images = images.map((img) => {
-        return { ...img, entity_id: img[EntityId] };
+        return { ...img, entity_id: img[EntityId as any] };
       });
     }
 
@@ -111,19 +121,28 @@ export class AuctionService3 {
 
     if (documents && documents.length > 0) {
       auction.documents = documents.map((doc) => {
-        return { ...doc, entity_id: doc[EntityId] };
+        return { ...doc, entity_id: doc[EntityId as any] };
       });
     }
 
-    auction.entity_id = auction[EntityId];
+    auction.entity_id = auction[EntityId as any];
     let registeredAuctionIds: any = new Set<string>();
 
     if (user_entity_id) {
-      const finalData = await BidderRepository.search().where("user_entity_id").eq(user_entity_id.toString()).all();
+      const finalData = await BidderRepository.search()
+        .where("user_entity_id")
+        .eq(user_entity_id.toString())
+        .all();
 
-      registeredAuctionIds = new Set(finalData.map((data) => data.registered_auction_id));
+      registeredAuctionIds = new Set(
+        finalData.map((data) => data.registered_auction_id)
+      );
     }
-    return { ...auction, auction_registered: registeredAuctionIds.has(auction.entity_id) };
+
+    return {
+      ...auction,
+      auction_registered: registeredAuctionIds.has(auction.entity_id),
+    };
   }
 
   async update(entity_id: string, entity: IAuction) {
@@ -139,7 +158,7 @@ export class AuctionService3 {
     };
 
     const a = await AuctionRepository.save(entity_id, objToSave);
-    const entityId = a[EntityId];
+    const entityId = a[EntityId as any];
 
     if (objToSave.automated?.enabled) {
       // only schedule if date_from is in the future
@@ -153,8 +172,12 @@ export class AuctionService3 {
         // if an auction is in progress, we need to remove it and add it again
         const startingJobs = await auction_start_queue.getJobs(["delayed"]);
         const endingJobs = await auction_end_queue.getJobs(["delayed"]);
-        const existingStartJob = startingJobs.find((job) => job.data.auction_entity_id === entityId);
-        const existingEndJob = endingJobs.find((job) => job.data.auction_entity_id === entityId);
+        const existingStartJob = startingJobs.find(
+          (job) => job.data.auction_entity_id === entityId
+        );
+        const existingEndJob = endingJobs.find(
+          (job) => job.data.auction_entity_id === entityId
+        );
         if (existingStartJob) {
           console.log("Removing existing start job");
           await existingStartJob.remove();
@@ -164,7 +187,10 @@ export class AuctionService3 {
           await existingEndJob.remove();
         }
 
-        const d = moment(moment(objToSave.date_from)).diff(moment(), "milliseconds");
+        const d = moment(moment(objToSave.date_from)).diff(
+          moment(),
+          "milliseconds"
+        );
         console.log("Scheduling auction start in", d, "ms");
         auction_start_queue.add(
           {
@@ -172,7 +198,7 @@ export class AuctionService3 {
           },
           {
             delay: d,
-          },
+          }
         );
       } else {
         console.log("Auction is in the past, not scheduling");
@@ -180,7 +206,9 @@ export class AuctionService3 {
         // if the end date is also in the past
         if (moment(objToSave.date_to) < moment().tz("Africa/Johannesburg")) {
           const endingJobs = await auction_end_queue.getJobs(["delayed"]);
-          const existingEndJob = endingJobs.find((job) => job.data.auction_entity_id === entityId);
+          const existingEndJob = endingJobs.find(
+            (job) => job.data.auction_entity_id === entityId
+          );
           if (existingEndJob) {
             console.log("Removing existing end job");
             await existingEndJob.remove();
@@ -210,7 +238,9 @@ export class AuctionService3 {
 
       // We also need to remove any existing auction_start jobs. We may have saved the auction with `automated enabled` and then disabled it afterwards.
       const startingJobs = await auction_start_queue.getJobs(["delayed"]);
-      const existingStartJob = startingJobs.find((job) => job?.data?.auction_entity_id === entityId);
+      const existingStartJob = startingJobs.find(
+        (job) => job?.data?.auction_entity_id === entityId
+      );
       if (existingStartJob) {
         console.log("Removing existing start job");
         await existingStartJob.remove();
@@ -256,7 +286,7 @@ export class AuctionService3 {
     for (const auction of auctions) {
       const images = await FileRepository.search() //
         .where("auction_entity_id")
-        .eq(auction[EntityId])
+        .eq(auction[EntityId as any])
         .and("type")
         .eq("Image")
         .sortBy("order", "ASC")
@@ -264,7 +294,7 @@ export class AuctionService3 {
 
       const documents = await FileRepository.search() //
         .where("auction_entity_id")
-        .eq(auction[EntityId])
+        .eq(auction[EntityId as any])
         .and("type")
         .eq("Document")
         .return.all();
@@ -282,9 +312,14 @@ export class AuctionService3 {
     let registeredAuctionIds: any = new Set<string>();
 
     if (user_entity_id) {
-      const finalData = await BidderRepository.search().where("user_entity_id").eq(user_entity_id.toString()).all();
+      const finalData = await BidderRepository.search()
+        .where("user_entity_id")
+        .eq(user_entity_id.toString())
+        .all();
 
-      registeredAuctionIds = new Set(finalData.map((data) => data.registered_auction_id));
+      registeredAuctionIds = new Set(
+        finalData.map((data) => data.registered_auction_id)
+      );
     }
 
     // Map the sortedAuctionList with the auction_registered flag
@@ -309,7 +344,9 @@ export class AuctionService3 {
 
     //From Bull.js we need to find the fob associated to this auction's entity_id.
     const jobs = await auction_end_queue.getJobs(["waiting", "delayed"]);
-    const auctionEndJob = jobs.find((job) => job.data.auction_entity_id === auction_entity_id);
+    const auctionEndJob = jobs.find(
+      (job) => job.data.auction_entity_id === auction_entity_id
+    );
     if (auctionEndJob) {
       const timestamp = auctionEndJob.timestamp; // 1717248600027
       const delay = auctionEndJob.opts.delay; // 257399974
@@ -321,10 +358,19 @@ export class AuctionService3 {
 
       const remainingTime = moment.duration(diff);
       //00:00:00:00 - days:hours:minutes:seconds with padded zeros for double digits
-      const remainingTimeFormatted = `${remainingTime.days().toString().padStart(2, "0")}:${remainingTime.hours().toString().padStart(2, "0")}:${remainingTime
+      const remainingTimeFormatted = `${remainingTime
+        .days()
+        .toString()
+        .padStart(2, "0")}:${remainingTime
+        .hours()
+        .toString()
+        .padStart(2, "0")}:${remainingTime
         .minutes()
         .toString()
-        .padStart(2, "0")}:${remainingTime.seconds().toString().padStart(2, "0")}`;
+        .padStart(2, "0")}:${remainingTime
+        .seconds()
+        .toString()
+        .padStart(2, "0")}`;
       return {
         remaining_time: remainingTimeFormatted,
       };
@@ -349,7 +395,7 @@ export class AuctionService3 {
     // Determine if there are any lots that have been extended
     const extendedLots = jobs.filter((job) => {
       const { lot_entity_id } = job.data;
-      return lots.some((lot) => lot[EntityId] === lot_entity_id);
+      return lots.some((lot) => lot[EntityId as any] === lot_entity_id);
     });
 
     return extendedLots.length > 0;
@@ -369,7 +415,7 @@ export class AuctionService3 {
     if (firstInProgress) {
       return {
         ...firstInProgress,
-        entity_id: firstInProgress[EntityId],
+        entity_id: firstInProgress[EntityId as any],
       };
     } else {
       // There's no live auction. Let's check if there are any auctions with extended lots.
@@ -379,12 +425,14 @@ export class AuctionService3 {
         .return.all();
 
       for (const auction of auctions) {
-        const hasExtendedLots = await this.hasExtendedLots(auction[EntityId]);
+        const hasExtendedLots = await this.hasExtendedLots(
+          auction[EntityId as any]
+        );
         if (hasExtendedLots) {
           // Break the loop ASAP.
           return {
             ...auction,
-            entity_id: auction[EntityId],
+            entity_id: auction[EntityId as any],
           };
         }
       }
@@ -406,11 +454,13 @@ export class AuctionService3 {
 
     const extendedAuctions = [];
     for (const auction of auctions) {
-      const hasExtendedLots = await this.hasExtendedLots(auction[EntityId]);
+      const hasExtendedLots = await this.hasExtendedLots(
+        auction[EntityId as any]
+      );
       if (hasExtendedLots) {
         extendedAuctions.push({
           ...auction,
-          entity_id: auction[EntityId],
+          entity_id: auction[EntityId as any],
         });
       }
     }
@@ -444,23 +494,26 @@ export class AuctionService3 {
     if (lots[0]) {
       await CurrentLotRepository.save({
         auction_entity_id: auction_entity_id,
-        lot_entity_id: lots[0][EntityId],
+        lot_entity_id: lots[0][EntityId as any],
       });
     }
 
     //TODO maybe use a transaction here (multi)
     for (const lot of lots) {
       lot.status = LOT_BIDDING_OPEN;
-      await LotRepository.save(lot[EntityId], lot);
+      await LotRepository.save(lot[EntityId as any], lot);
     }
 
-    this.rtc_di.broadcastAuctionManualStart(auction.client_entity_id.toString(), {
-      entity_id: auction_entity_id,
-      title: auction.title.toString(),
-      description: auction.description.toString(),
-      status: AUCTION_IN_PROGRESS,
-      type: auction.type.toString(),
-    });
+    this.rtc_di.broadcastAuctionManualStart(
+      auction.client_entity_id.toString(),
+      {
+        entity_id: auction_entity_id,
+        title: auction.title.toString(),
+        description: auction.description.toString(),
+        status: AUCTION_IN_PROGRESS,
+        type: auction.type.toString(),
+      }
+    );
 
     return true;
   }
@@ -484,7 +537,7 @@ export class AuctionService3 {
       if (lot.status == LOT_BIDDING_OPEN) {
         // we need to set all lot statuses to Bidding Closed if they are on Bidding Open.
         lot.status = LOT_BIDDING_CLOSED;
-        await LotRepository.save(lot[EntityId], lot);
+        await LotRepository.save(lot[EntityId as any], lot);
       }
     }
 
@@ -493,15 +546,18 @@ export class AuctionService3 {
       .where("auction_entity_id")
       .eq(auction_entity_id)
       .return.first();
-    await CurrentLotRepository.remove(curentLot[EntityId]);
+    await CurrentLotRepository.remove(curentLot[EntityId as any]);
 
-    this.rtc_di.broadcastAuctionManualStop(auction.client_entity_id.toString(), {
-      entity_id: auction_entity_id,
-      title: auction.title.toString(),
-      description: auction.description.toString(),
-      status: AUCTION_COMPLETE,
-      type: auction.type.toString(),
-    });
+    this.rtc_di.broadcastAuctionManualStop(
+      auction.client_entity_id.toString(),
+      {
+        entity_id: auction_entity_id,
+        title: auction.title.toString(),
+        description: auction.description.toString(),
+        status: AUCTION_COMPLETE,
+        type: auction.type.toString(),
+      }
+    );
 
     return true;
   }

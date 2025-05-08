@@ -14,6 +14,7 @@ const lotService = Container.get(LotService3);
 const lotCelebrate = {
   title: Joi.string().required(),
   description: Joi.string().required(),
+  broker_name: Joi.string().allow(null).optional(),
   starting_price: Joi.alternatives()
     .try(Joi.number(), Joi.string().allow(""))
     .default(0)

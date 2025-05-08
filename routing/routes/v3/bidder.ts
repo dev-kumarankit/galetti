@@ -59,10 +59,12 @@ router.post(
             actionHouseName: auctionData?.title,
             lotNumber: "",
             actioneerName: auctionData?.title,
+            auctionId: bidder?.registered_auction_id,
             actioneeDateAndTime: `${moment(auctionData?.date_from).format(
               "Do MMM YYYY, h:mm A"
             )} - ${moment(auctionData?.date_to).format("Do MMM YYYY, h:mm A")}`,
             actioneeLotNumber: "",
+            bidderNumber: "",
           };
 
           try {
@@ -307,8 +309,11 @@ router.get(
   async (req: any, res: Response) => {
     try {
       const { query, user_details } = req;
-      const { client_entity_id } = query;
-      const response = await bidderService.biddersForClient(client_entity_id);
+      const { client_entity_id, auction_entity_id } = query;
+      const response = await bidderService.biddersForClient({
+        client_entity_id: client_entity_id,
+        auction_entity_id: auction_entity_id,
+      });
       return res
         .json(success("Successfully fetched bidders for client!", response))
         .status(200)

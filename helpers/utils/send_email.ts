@@ -1,39 +1,25 @@
-import nodemailer from "nodemailer";
-import { stripHtml } from "./strip_html";
+import sgMail from "@sendgrid/mail";
 
 interface IEmailOptions {
-  subject: string;
-  body: string;
-  to: string;
+  subject?: string;
+  body?: string;
+  to?: string;
 }
 
+sgMail.setApiKey(process.env.STRIPE_EMAIL_KEY); // Replace with your real API key
 export async function sendEmail(options: IEmailOptions) {
-  try {
-    const transporter = nodemailer.createTransport({
-      host: "smtp.gmail.com",
-      port: 587,
-      auth: {
-        user: process.env.GOOGLE_MAIL_EMAIL,
-        pass: process.env.GOOGLE_MAIL_PASS,
-      },
+  const msg = {
+    to: options.to,
+    from: `"${process.env.GOOGLE_MAIL_EMAIL_NAME}" <${process.env.GOOGLE_MAIL_EMAIL}>`,
+    subject: options.subject,
+    html: options.body,
+  };
+  sgMail
+    .send(msg)
+    .then(() => {
+      console.log("email sent");
+    })
+    .catch((error) => {
+      console.error(error, "error check");
     });
-
-    // transporter.verify().then(console.log).catch(console.error);
-
-    await transporter
-      .sendMail({
-        from: `"${process.env.GOOGLE_MAIL_EMAIL_NAME}" <${process.env.GOOGLE_MAIL_EMAIL}>`,
-        to: options.to,
-        subject: options.subject,
-        text: stripHtml(options.subject),
-        html: options.body,
-      })
-      .then((info) => {
-        console.log({ info });
-      })
-      .catch(console.error);
-  } catch (e) {
-    console.error(e);
-    throw e;
-  }
 }
