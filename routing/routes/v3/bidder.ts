@@ -301,6 +301,7 @@ router.get(
   celebrate({
     [Segments.QUERY]: Joi.object({
       client_entity_id: Joi.string().required(),
+      auction_entity_id: Joi.string().optional().allow(null, ""),
     }),
   }),
   // isAuthorized,

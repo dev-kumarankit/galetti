@@ -14,6 +14,7 @@ const bidderSchema = new Schema(
     address: { type: "string" },
     created_at: { type: "date" },
     registered_auction_id: { type: "string" },
+    auction_entity_id: { type: "string" },
   },
   { dataStructure: "JSON" }
 );

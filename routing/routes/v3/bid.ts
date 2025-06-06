@@ -31,7 +31,10 @@ router.post(
     try {
       const { body, user_details } = req;
       const response = await bidService.placeBid(body);
-      return res.json(success("Successfully placed a bid!", response)).status(200).end();
+      return res
+        .json(success("Successfully placed a bid!", response))
+        .status(200)
+        .end();
     } catch (e) {
       console.error("🔥 error:", e);
 
@@ -40,7 +43,7 @@ router.post(
           .json(
             failure({
               message: e.message,
-            }),
+            })
           )
           .status(400)
           .end();
@@ -50,13 +53,13 @@ router.post(
             failure({
               message: "Failed to place a bid!",
               e,
-            }),
+            })
           )
           .status(400)
           .end();
       }
     }
-  },
+  }
 );
 
 router.post(
@@ -74,8 +77,15 @@ router.post(
       const { body, user_details } = req;
       const { lot_entity_id, increment, type } = body;
 
-      const response = await bidService.placeSystemBid(lot_entity_id, increment, type);
-      return res.json(success("Successfully placed a floor bid!", response)).status(200).end();
+      const response = await bidService.placeSystemBid(
+        lot_entity_id,
+        increment,
+        type
+      );
+      return res
+        .json(success("Successfully placed a floor bid!", response))
+        .status(200)
+        .end();
     } catch (e) {
       console.error("🔥 error:", e);
 
@@ -84,7 +94,7 @@ router.post(
           .json(
             failure({
               message: e.message,
-            }),
+            })
           )
           .status(400)
           .end();
@@ -94,13 +104,13 @@ router.post(
             failure({
               message: "Failed to place a floor bid!",
               e,
-            }),
+            })
           )
           .status(400)
           .end();
       }
     }
-  },
+  }
 );
 
 router.post(
@@ -118,8 +128,15 @@ router.post(
       const { body, user_details } = req;
       const { lot_entity_id, amount, type } = body;
 
-      const response = await bidService.placeSystemCustomBid(lot_entity_id, amount, type);
-      return res.json(success("Successfully placed a custom floor bid!", response)).status(200).end();
+      const response = await bidService.placeSystemCustomBid(
+        lot_entity_id,
+        amount,
+        type
+      );
+      return res
+        .json(success("Successfully placed a custom floor bid!", response))
+        .status(200)
+        .end();
     } catch (e) {
       console.error("🔥 error:", e);
 
@@ -128,7 +145,7 @@ router.post(
           .json(
             failure({
               message: e.message,
-            }),
+            })
           )
           .status(400)
           .end();
@@ -138,13 +155,13 @@ router.post(
             failure({
               message: "Failed to place a custom floor bid!",
               e,
-            }),
+            })
           )
           .status(400)
           .end();
       }
     }
-  },
+  }
 );
 
 router.get(
@@ -164,7 +181,10 @@ router.get(
       const { query, user_details } = req;
       const { entity_id, page, limit } = query;
       const response = await bidService.bidsForLot(entity_id, page, limit);
-      return res.json(success("Successfully fetched bids for lot!", response)).status(200).end();
+      return res
+        .json(success("Successfully fetched bids for lot!", response))
+        .status(200)
+        .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
@@ -172,12 +192,12 @@ router.get(
           failure({
             message: "Failed to fetch bids for lot!",
             e,
-          }),
+          })
         )
         .status(400)
         .end();
     }
-  },
+  }
 );
 
 router.post(
@@ -195,7 +215,10 @@ router.post(
       const { body, user_details } = req;
       const { entity_id } = body;
       const response = await bidService.reject(entity_id);
-      return res.json(success("Successfully rejected bid!", response)).status(200).end();
+      return res
+        .json(success("Successfully rejected bid!", response))
+        .status(200)
+        .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
@@ -203,12 +226,12 @@ router.post(
           failure({
             message: "Failed to reject bid!",
             e,
-          }),
+          })
         )
         .status(400)
         .end();
     }
-  },
+  }
 );
 
 router.post(
@@ -223,7 +246,10 @@ router.post(
       const { body, user_details } = req;
       const { entity_id } = body;
       const response = await bidService.backUp(entity_id);
-      return res.json(success("Successfully backed up bid!", response)).status(200).end();
+      return res
+        .json(success("Successfully backed up bid!", response))
+        .status(200)
+        .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
@@ -231,12 +257,12 @@ router.post(
           failure({
             message: "Failed to back up bid!",
             e,
-          }),
+          })
         )
         .status(400)
         .end();
     }
-  },
+  }
 );
 
 router.delete(
@@ -253,7 +279,10 @@ router.delete(
       const { body, decoded_token } = req;
       const { lot_entity_id } = body;
       const response = await bidService.deleteAllForLot(lot_entity_id);
-      return res.json(success("Successfully deleted all bids for lot!", response)).status(200).end();
+      return res
+        .json(success("Successfully deleted all bids for lot!", response))
+        .status(200)
+        .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
@@ -261,12 +290,12 @@ router.delete(
           failure({
             message: "Failed to delete all bids for lot!",
             e,
-          }),
+          })
         )
         .status(400)
         .end();
     }
-  },
+  }
 );
 
 router.delete(
@@ -283,7 +312,10 @@ router.delete(
       const { body, decoded_token } = req;
       const { auction_entity_id } = body;
       const response = await bidService.deleteAllForAuction(auction_entity_id);
-      return res.json(success("Successfully deleted all bids for auction!", response)).status(200).end();
+      return res
+        .json(success("Successfully deleted all bids for auction!", response))
+        .status(200)
+        .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
@@ -291,12 +323,12 @@ router.delete(
           failure({
             message: "Failed to delete all bids for auction!",
             e,
-          }),
+          })
         )
         .status(400)
         .end();
     }
-  },
+  }
 );
 
 router.get(
@@ -312,7 +344,12 @@ router.get(
       const { query } = req;
       const { user_entity_id, page, limit } = query;
       const response = await bidService.biddingHistoryForUser(user_entity_id);
-      return res.json(success("Successfully fetched bidding history for user!", response)).status(200).end();
+      return res
+        .json(
+          success("Successfully fetched bidding history for user!", response)
+        )
+        .status(200)
+        .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
@@ -320,12 +357,12 @@ router.get(
           failure({
             message: "Failed to fetch bidding history for user!",
             e,
-          }),
+          })
         )
         .status(400)
         .end();
     }
-  },
+  }
 );
 
 export { router as bidRouter };

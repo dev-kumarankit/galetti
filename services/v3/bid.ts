@@ -12,7 +12,12 @@ import { BID_ACTIVE, BID_REJECTED } from "../../helpers/constants/bid_enums";
 import { AuctionRepository } from "../../schemas/redis/auction";
 import moment from "moment-timezone";
 import { redisClient } from "../../integration/redis/redis";
-import { FLOOR_USER, getRandomVendorUser, getSystemUserByEntityId, isSystemUser } from "../../config/floor_entities";
+import {
+  FLOOR_USER,
+  getRandomVendorUser,
+  getSystemUserByEntityId,
+  isSystemUser,
+} from "../../config/floor_entities";
 import { FirebaseService3 } from "./firebase";
 import { formatMoney } from "../../helpers/constants/format_money";
 
@@ -66,7 +71,13 @@ export class BidService3 {
     }
 
     // check if the user is a verified bidder
-    const bidder = await BidderRepository.search().where("user_entity_id").eq(bid.user_entity_id).return.first();
+    const bidder = await BidderRepository.search()
+      .where("user_entity_id")
+      .eq(bid.user_entity_id)
+      .where("registered_auction_id")
+      .eq(lot.auction_entity_id)
+      .return.first();
+
     if (!bidder?.is_verified) {
       throw new ValidationError("You are not a verified bidder!");
     }
@@ -82,16 +93,40 @@ export class BidService3 {
     if (bid.increment) {
       const highest = parseFloat((highestBid?.amount ?? 0).toString());
       // mutate the bid amount to be the highest + increment to 2 decimal places
-      bid.amount = parseFloat((highest + parseFloat(bid.increment.toString())).toFixed(2));
+      bid.amount = parseFloat(
+        (highest + parseFloat(bid.increment.toString())).toFixed(2)
+      );
+      if (
+        parseFloat(bid.amount.toString()) <
+        (lot?.starting_price ? parseFloat(lot.starting_price) : 0)
+      ) {
+        throw new ValidationError(
+          `Your bid amount must be more than ${
+            lot?.starting_price ? lot.starting_price : 0
+          }`
+        );
+      }
     } else {
+      if (
+        parseFloat(bid.amount.toString()) <
+        (lot?.starting_price ? parseFloat(lot.starting_price) : 0)
+      ) {
+        throw new ValidationError(
+          `Your bid amount must be more than ${
+            lot?.starting_price ? lot.starting_price : 0
+          }`
+        );
+      }
       // can only place bid if its higher than the current highest amount
       if (highestBid) {
         if (bid.amount <= parseFloat(highestBid.amount.toString())) {
           // amount must be higher than the highest bid.
           throw new ValidationError(
-            `You've been outbid! Your bid amount must be more than ${formatMoney({
-              value: highestBid.amount.toString(),
-            })}. Please refresh your screen if the problem persists.`,
+            `You've been outbid! Your bid amount must be more than ${formatMoney(
+              {
+                value: highestBid.amount.toString(),
+              }
+            )}. Please refresh your screen if the problem persists.`
           );
         }
 
@@ -112,7 +147,7 @@ export class BidService3 {
                   body: `You have been outbid on lot #${lot.lot_number} - ${lot.title}`,
                 },
               },
-              [highestBid.user_entity_id.toString()],
+              [highestBid.user_entity_id.toString()]
             );
           }
         }
@@ -141,7 +176,9 @@ export class BidService3 {
         entity_id: ob[EntityId],
         amount: ob.amount,
         // created_at: ob.created_at,
-        created_at: moment.unix(parseFloat(ob.created_at.toString())).tz("Africa/Johannesburg"),
+        created_at: moment
+          .unix(parseFloat(ob.created_at.toString()))
+          .tz("Africa/Johannesburg"),
         status: ob.status,
         user: {
           entity_id: user[EntityId],
@@ -170,7 +207,11 @@ export class BidService3 {
     return obp;
   }
 
-  public async placeSystemBid(lot_entity_id: string, increment: number, type: "floor" | "vendor") {
+  public async placeSystemBid(
+    lot_entity_id: string,
+    increment: number,
+    type: "floor" | "vendor"
+  ) {
     const lot = await LotRepository.fetch(lot_entity_id);
     if (!lot.auction_entity_id) {
       throw new ValidationError("Lot not found!");
@@ -220,7 +261,9 @@ export class BidService3 {
       bid: {
         entity_id: b[EntityId],
         amount: b.amount,
-        created_at: moment.unix(parseFloat(b.created_at.toString())).tz("Africa/Johannesburg"),
+        created_at: moment
+          .unix(parseFloat(b.created_at.toString()))
+          .tz("Africa/Johannesburg"),
         status: b.status,
         user: {
           entity_id: system_user.entity_id,
@@ -245,7 +288,11 @@ export class BidService3 {
     this.rtc_di.broadcastNewBid(lot.auction_entity_id.toString(), obp);
   }
 
-  public async placeSystemCustomBid(lot_entity_id: string, amount: number, type: "floor" | "vendor") {
+  public async placeSystemCustomBid(
+    lot_entity_id: string,
+    amount: number,
+    type: "floor" | "vendor"
+  ) {
     const lot = await LotRepository.fetch(lot_entity_id);
     if (!lot.auction_entity_id) {
       throw new ValidationError("Lot not found!");
@@ -262,7 +309,9 @@ export class BidService3 {
     const lastBidAmount = parseFloat((last_bid?.amount ?? 0).toString());
 
     if (amount <= lastBidAmount) {
-      throw new ValidationError("The bid amount must be greater than the current highest bid.");
+      throw new ValidationError(
+        "The bid amount must be greater than the current highest bid."
+      );
     }
 
     let system_user = null;
@@ -299,7 +348,9 @@ export class BidService3 {
       bid: {
         entity_id: b[EntityId],
         amount: b.amount,
-        created_at: moment.unix(parseFloat(b.created_at.toString())).tz("Africa/Johannesburg"),
+        created_at: moment
+          .unix(parseFloat(b.created_at.toString()))
+          .tz("Africa/Johannesburg"),
         status: b.status,
         user: {
           entity_id: system_user.entity_id,
@@ -324,14 +375,20 @@ export class BidService3 {
     this.rtc_di.broadcastNewBid(lot.auction_entity_id.toString(), obp);
   }
 
-  public async bidsForLot(entity_id: string, page: number = 0, limit: number = 10) {
+  public async bidsForLot(
+    entity_id: string,
+    page: number = 0,
+    limit: number = 10
+  ) {
     const lot = await LotRepository.fetch(entity_id);
     if (!lot.auction_entity_id) {
       throw new ValidationError("Lot not found!");
     }
 
     //get the auction for this lot
-    const auction = await AuctionRepository.fetch(lot.auction_entity_id.toString());
+    const auction = await AuctionRepository.fetch(
+      lot.auction_entity_id.toString()
+    );
     if (!auction) {
       throw new ValidationError("Auction was not found for this lot!");
     }
@@ -360,7 +417,9 @@ export class BidService3 {
       let bdr = null;
 
       if (isSystemUser(bid.user_entity_id.toString())) {
-        const system_user = getSystemUserByEntityId(bid.user_entity_id.toString());
+        const system_user = getSystemUserByEntityId(
+          bid.user_entity_id.toString()
+        );
 
         // if the user is the floor user, we hardcode the user details here.
         usr = {
@@ -375,7 +434,9 @@ export class BidService3 {
         };
       } else {
         // from the user repository, find the user
-        const fetchedUser = await UserRepository.fetch(bid.user_entity_id.toString());
+        const fetchedUser = await UserRepository.fetch(
+          bid.user_entity_id.toString()
+        );
         if (fetchedUser.client_entity_id) {
           usr = fetchedUser;
           delete usr?.password;
@@ -450,10 +511,13 @@ export class BidService3 {
           body: `Your bid has been rejected on lot #${lot.lot_number} - ${lot.title}`,
         },
       },
-      [bid.user_entity_id.toString()],
+      [bid.user_entity_id.toString()]
     );
 
-    this.rtc_di.broadcastRejectedBid(bid.lot_entity_id.toString(), bid[EntityId]);
+    this.rtc_di.broadcastRejectedBid(
+      bid.lot_entity_id.toString(),
+      bid[EntityId]
+    );
 
     return ob;
   }
@@ -476,7 +540,9 @@ export class BidService3 {
     const lot = await LotRepository.fetch(bid.lot_entity_id.toString());
 
     const bidsToReject = bids.filter((b) => {
-      return parseFloat(b.amount.toString()) > parseFloat(bid.amount.toString());
+      return (
+        parseFloat(b.amount.toString()) > parseFloat(bid.amount.toString())
+      );
     });
     const bidsToRejectIDs = bidsToReject.map((b) => b[EntityId]);
 
@@ -492,11 +558,14 @@ export class BidService3 {
           body: `One or more of your bids have been rejected on lot #${lot.lot_number} - ${lot.title}`,
         },
       },
-      [...rejectingBidUserIDs],
+      [...rejectingBidUserIDs]
     );
 
     // Broadcast the rejected bids
-    this.rtc_di.broadcastBackedUpBids(bid.lot_entity_id.toString(), bidsToRejectIDs);
+    this.rtc_di.broadcastBackedUpBids(
+      bid.lot_entity_id.toString(),
+      bidsToRejectIDs
+    );
 
     // Back-up the bids
     const multi = redisClient.multi();
@@ -570,7 +639,11 @@ export class BidService3 {
       bidForUser.entity_id = bidForUser[EntityId];
 
       let lot = null;
-      if (alreadyRetrievedLots.findIndex((x) => x[EntityId] === bidForUser.lot_entity_id.toString()) === -1) {
+      if (
+        alreadyRetrievedLots.findIndex(
+          (x) => x[EntityId] === bidForUser.lot_entity_id.toString()
+        ) === -1
+      ) {
         // here we have not yet retrieved the lot
         lot = await LotRepository.fetch(bidForUser.lot_entity_id.toString());
         if (lot?.auction_entity_id) {
@@ -591,15 +664,23 @@ export class BidService3 {
           lot = null;
         }
       } else {
-        lot = alreadyRetrievedLots.find((x) => x[EntityId] === bidForUser.lot_entity_id.toString());
+        lot = alreadyRetrievedLots.find(
+          (x) => x[EntityId] === bidForUser.lot_entity_id.toString()
+        );
       }
 
       // admin might have deleted the lot, so we need to perform a truthy check
       if (lot) {
         let auction = null;
-        if (alreadyRetrievedAuctions.findIndex((x) => x[EntityId] === lot.auction_entity_id.toString()) === -1) {
+        if (
+          alreadyRetrievedAuctions.findIndex(
+            (x) => x[EntityId] === lot.auction_entity_id.toString()
+          ) === -1
+        ) {
           // here we have not yet retrieved the auction
-          auction = await AuctionRepository.fetch(lot.auction_entity_id.toString());
+          auction = await AuctionRepository.fetch(
+            lot.auction_entity_id.toString()
+          );
           if (auction?.client_entity_id) {
             auction.entity_id = auction[EntityId];
             auction.lots = [];
@@ -608,26 +689,40 @@ export class BidService3 {
             auction = null;
           }
         } else {
-          auction = alreadyRetrievedAuctions.find((x) => x[EntityId] === lot.auction_entity_id.toString());
+          auction = alreadyRetrievedAuctions.find(
+            (x) => x[EntityId] === lot.auction_entity_id.toString()
+          );
         }
 
         // admin might have deleted the auction, so we need to perform a truthy check
         if (auction) {
-          if (auction.lots.findIndex((x) => x[EntityId] === lot[EntityId]) === -1) {
+          if (
+            auction.lots.findIndex((x) => x[EntityId] === lot[EntityId]) === -1
+          ) {
             // add the bid we are busy with, to the lot
             lot.bids = [bidForUser];
             auction.lots.push(lot);
             auction.lots.sort((a, b) => {
               // sort by lot number ascending
-              return parseFloat(a.lot_number.toString()) - parseFloat(b.lot_number.toString());
+              return (
+                parseFloat(a.lot_number.toString()) -
+                parseFloat(b.lot_number.toString())
+              );
             });
           } else {
             // add the bid to the lot if it does not exist in there yet
-            if (lot.bids.findIndex((x) => x[EntityId] === bidForUser[EntityId]) === -1) {
+            if (
+              lot.bids.findIndex(
+                (x) => x[EntityId] === bidForUser[EntityId]
+              ) === -1
+            ) {
               lot.bids.push(bidForUser);
               lot.bids.sort((a, b) => {
                 // sort by amount descending
-                return parseFloat(b.amount.toString()) - parseFloat(a.amount.toString());
+                return (
+                  parseFloat(b.amount.toString()) -
+                  parseFloat(a.amount.toString())
+                );
               });
             }
           }

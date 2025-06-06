@@ -49,8 +49,11 @@ export class FileService3 {
     });
 
     const result = await FileRepository.save({
-      file_name: file.name,
-      file_extension: file.name.split(".").pop() ?? "",
+      file_name: file.name?.replace(".heic", ".jpeg"),
+      file_extension:
+        file.name.split(".").pop() == "heic"
+          ? "jpeg"
+          : file.name.split(".").pop() == "heic",
       custom_name: custom_name,
       type: type,
       uploaded_file_url: uploadedFile.url,

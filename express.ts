@@ -12,7 +12,7 @@ celebrator(
   {},
   {
     convert: true, // force conversions
-  },
+  }
 );
 
 const errorHandlers = new ErrorHandlers();
@@ -33,9 +33,9 @@ expressApp.use(
     limits: {
       fileSize: 30 * 1024 * 1024, // 30 MB
     },
-    safeFileNames: true, // non-alphanumeric characters except dashes and underscores will be stripped
+    safeFileNames: false, // non-alphanumeric characters except dashes and underscores will be stripped
     preserveExtension: true, // keep the file extension
-  }),
+  })
 );
 
 // Support for different endpoint versions.

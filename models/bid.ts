@@ -5,5 +5,6 @@ export interface IBid extends Entity {
   user_entity_id: string;
   amount: number;
   status: string;
+  auction_id?: string;
   created_at?: Date | number;
 }
