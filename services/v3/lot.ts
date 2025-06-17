@@ -10,6 +10,7 @@ import moment from "moment-timezone";
 import {
   LOT_BIDDING_CLOSED,
   LOT_BIDDING_OPEN,
+  LOT_RNR
 } from "../../helpers/constants/lot_enums";
 import { vendor_bidding_queue } from "../../integration/redis/bull/queues/vendor_bidding";
 import { AUCTION_IN_PROGRESS } from "../../helpers/constants/auction_enums";
@@ -64,7 +65,87 @@ export class LotService3 {
       ...obj,
     };
   }
+ public async updateLotDetails(lot_id: string, other_details: any) {
 
+
+    const existingLot = await LotRepository.fetch(lot_id);
+    if (!existingLot.auction_entity_id) {
+      throw new ValidationError("Lot not found.");
+    }
+    if (existingLot) {
+      // Update the reserve_price
+      existingLot.reserve_price = other_details?.reserve_price||null;
+      const lotDetails = await LotRepository.save(lot_id, existingLot);
+      const auction = await AuctionRepository.fetch(lotDetails.auction_entity_id.toString());
+      
+      if(!lotDetails?.reserve_price&&!auction?.automated?.enabled){
+      const latestBid = await BidRepository.search() //
+          .where("lot_entity_id")
+          .eq(lot_id)
+          .sortBy("created_at", "DESC")
+          .return.first();
+
+            this.rtc_di.broadcastLotStatusForAuction(lot_id, {
+              lot_entity_id: lot_id,
+              lot_number: parseInt(lotDetails.lot_number.toString()),
+              auction_entity_id: lotDetails.auction_entity_id.toString(),
+              title: lotDetails.title.toString(),
+              status: LOT_BIDDING_OPEN,
+              type: lotDetails.type.toString(),
+              reserve_price_check:true,
+              reserve_price:lotDetails?.reserve_price,
+              highest_bid: latestBid,
+            });
+          }
+
+      if (auction.status.toString() === AUCTION_IN_PROGRESS && lotDetails.vendor_bidding?.enabled) {
+        // Check if there is an existing vendor bidding job for this lot.
+        const vendorBiddingJobs = await vendor_bidding_queue.getJobs(["delayed"]);
+        const existingVendorBiddingJob = vendorBiddingJobs.find((job) => job.data.lot_entity_id === lot_id);
+        if (existingVendorBiddingJob) {
+          console.log("Removing existing vendor bidding job");
+          await existingVendorBiddingJob.remove();
+        }
+
+        // Schedule a new vendor bidding job which will continue to place bids for this auction.
+        vendor_bidding_queue.add(
+          {
+            lot_entity_id: lot_id,
+          },
+          {
+            delay: moment.duration(lotDetails.vendor_bidding.timeout, "seconds").asMilliseconds(),
+          },
+        );
+      } else if (lotDetails.vendor_bidding?.enabled == false) {
+        // we need to check if there is any existing vendor bidding job for this lot and remove it.
+        // if we save if without vendor bidding enabled, it means we need to remove any existing vendor bidding job.
+
+        const withTimeout = (promise, ms) => {
+          return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout reached")), ms))]);
+        };
+
+        try {
+          const vendorBiddingJobs = await withTimeout(vendor_bidding_queue.getJobs(["delayed"]), 5000);
+          const existingVendorBiddingJob = vendorBiddingJobs.find((job) => job.data.lot_entity_id === lot_id);
+
+          if (existingVendorBiddingJob) {
+            console.log("Removing existing vendor bidding job");
+            await existingVendorBiddingJob.remove();
+          }
+        } catch (err) {
+          console.error("Failed to fetch jobs:", err);
+        }
+      }
+      return lotDetails
+    } else {
+      console.error(`Lot with entity_id ${lot_id} not found.`);
+      return
+    }
+
+
+    // const auction = await AuctionRepository.fetch(existingLot.auction_entity_id.toString());
+
+  }
   public async updateLot(entity_id: string, lot: ILot) {
     const existingLot = await LotRepository.fetch(entity_id);
     if (!existingLot.auction_entity_id) {
@@ -592,7 +673,7 @@ export class LotService3 {
     const objToSave = {
       ...existingLot,
       updated_at: moment().tz("Africa/Johannesburg").unix(),
-      status: status,
+      status: status=="Reserve Not reached"?LOT_RNR:status,
     };
 
     const l: any = await LotRepository.save(entity_id, objToSave);

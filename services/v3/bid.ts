@@ -5,7 +5,7 @@ import { LotRepository } from "../../schemas/redis/lot";
 import ValidationError from "../../helpers/validation_error";
 import { BidRepository } from "../../schemas/redis/bid";
 import { UserRepository } from "../../schemas/redis/user";
-import { LOT_BIDDING_OPEN } from "../../helpers/constants/lot_enums";
+import { LOT_BIDDING_OPEN, LOT_SOLD, LOT_STC } from "../../helpers/constants/lot_enums";
 import { BidderRepository } from "../../schemas/redis/bidder";
 import { RealTimeCommunication } from "../../helpers/real_time_communication";
 import { BID_ACTIVE, BID_REJECTED } from "../../helpers/constants/bid_enums";
@@ -170,7 +170,7 @@ export class BidService3 {
       .eq(BID_ACTIVE)
       .count();
 
-    const obp = {
+    const obp:any = {
       count: bidCount,
       bid: {
         entity_id: ob[EntityId],
@@ -198,6 +198,55 @@ export class BidService3 {
       },
     };
 
+     const auctionData = await AuctionRepository.fetch(lot.auction_entity_id);
+    console.log(obp?.bid?.amount,"obp?.bid?.amount",lot?.reserve_price,obp?.bid?.amount < lot?.reserve_price)
+ if (obp?.bid?.amount < lot?.reserve_price && auctionData?.automated?.enabled && lot?.reserve_price) {
+      // console.log(lot, "lotlotlot");
+      await LotRepository.save(bid.lot_entity_id, {
+        ...lot,
+        status: LOT_STC,
+      });
+
+      const highestBidDetails = await BidRepository.search() //
+        .where("lot_entity_id")
+        .eq(bid.lot_entity_id)
+        .and("status")
+        .eq(BID_ACTIVE)
+        .sortBy("amount", "DESC")
+        .return.first();
+      this.rtc_di.broadcastLotStatusForAuction(lot.auction_entity_id, {
+        lot_entity_id: lot[EntityId as any],
+        lot_number: parseInt(lot.lot_number.toString()),
+        auction_entity_id: lot.auction_entity_id.toString(),
+        title: lot.title.toString(),
+        status: LOT_STC,
+        type: lot.type.toString(),
+        highest_bid: highestBidDetails,
+      });
+    }else if (obp?.bid?.amount > lot?.reserve_price && auctionData?.automated?.enabled && lot?.reserve_price) {
+      console.log(lot, "lotlotlot");
+      await LotRepository.save(bid.lot_entity_id, {
+        ...lot,
+        status: LOT_SOLD,
+      });
+
+      const highestBidDetails = await BidRepository.search() //
+        .where("lot_entity_id")
+        .eq(bid.lot_entity_id)
+        .and("status")
+        .eq(BID_ACTIVE)
+        .sortBy("amount", "DESC")
+        .return.first();
+      this.rtc_di.broadcastLotStatusForAuction(lot.auction_entity_id, {
+        lot_entity_id: lot[EntityId as any],
+        lot_number: parseInt(lot.lot_number.toString()),
+        auction_entity_id: lot.auction_entity_id.toString(),
+        title: lot.title.toString(),
+        status: LOT_SOLD,
+        type: lot.type.toString(),
+        highest_bid: highestBidDetails,
+      });
+    }
     // broadcast the bid to the lot
     // this.rtc_di.broadcastNewBid(bid.lot_entity_id, obp);
     this.rtc_di.broadcastNewBid(lot.auction_entity_id.toString(), obp);

@@ -24,11 +24,11 @@ const lotCelebrate = {
       }
       return value;
     }),
-  reserve_price: Joi.alternatives()
-    .try(Joi.number(), Joi.string().allow(""))
+ reserve_price: Joi.alternatives()
+    .try(Joi.number(), Joi.string().allow(""), Joi.valid(null))
     .default(0)
     .custom((value, helpers) => {
-      if (value === "") {
+      if (value === ""|| value === null) {
         return 0;
       }
       return value;
@@ -169,7 +169,36 @@ router.put(
     }
   }
 );
+router.put(
+  "/update-lot-details",
+  celebrate({
+    [Segments.BODY]: Joi.object({
+      lot_id: Joi.string().required(),
+      other_details:Joi.object({
+        reserve_price:Joi.number().optional().allow(null, ""),
+      }).required(),
+    }),
+  }),
+  async (req: any, res: Response) => {
+    try {
+      const { body, files } = req;
+      const response: any = await lotService.updateLotDetails(body.lot_id, body.other_details);
 
+      return res.json(success("Successfully updated a lot!", response)).status(200).end();
+    } catch (e) {
+      console.error("🔥 error:", e);
+      return res
+        .json(
+          failure({
+            message: "Failed to update a lot!",
+            e,
+          }),
+        )
+        .status(400)
+        .end();
+    }
+  },
+);
 router.get(
   "/get",
   celebrate({
