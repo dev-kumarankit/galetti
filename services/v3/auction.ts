@@ -97,6 +97,19 @@ export class AuctionService3 {
     if (!auction.client_entity_id) {
       throw new ValidationError("Auction not found.");
     }
+   if (auction?.date_from && auction?.date_to) {
+    const now = new Date();
+    const dateFrom = new Date(auction.date_from);
+    const dateTo = new Date(auction.date_to);
+
+    if (dateFrom <= now && dateTo >= now) {
+      auction.status = 'In-Progress';
+    } else if (dateFrom <= now && dateTo <= now) {
+      auction.status = 'Complete';
+    } else if (dateFrom > now && dateTo > now) {
+      auction.status = 'Upcoming';
+    }
+  }
 
     const images = await FileRepository.search() //
       .where("auction_entity_id")
@@ -281,7 +294,22 @@ export class AuctionService3 {
       .eq(client_entity_id)
       .sortBy("date_from", "ASC") // Sort dates ascending here, we then need to split them into 1. In-Progress First, 2. Upcoming, 3. Completed
       .return.all();
+   const now = new Date();
 
+      const updatedAuctions = auctions.map((auction) => {
+        const dateFrom = new Date(auction.date_from);
+        const dateTo = new Date(auction.date_to);
+
+        if (dateFrom <= now && dateTo >= now) {
+          auction.status = 'In-Progress';
+        } else if (dateFrom <= now && dateTo <= now) {
+          auction.status = 'Complete';
+        } else if (dateFrom > now && dateTo > now) {
+          auction.status = 'Upcoming';
+        }
+
+        return auction;
+      });
     // join the images and documents
     for (const auction of auctions) {
       const images = await FileRepository.search() //

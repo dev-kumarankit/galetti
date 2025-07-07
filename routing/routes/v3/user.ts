@@ -17,7 +17,7 @@ const userService = Container.get(UserService3);
 
 const userCelebrate = {
   name: Joi.string().trim().required(),
-  surname: Joi.string().trim().required(),
+surname: Joi.string().trim().allow('').optional(),
   cell_phone: Joi.object({
     calling_code: Joi.string()
       .pattern(
@@ -30,8 +30,8 @@ const userCelebrate = {
   }).required(),
   // email: Joi.string().lowercase().trim().required(),
   email: Joi.string().email().lowercase().trim().required(),
-  get_communication: Joi.bool().optional(),
-  agrees_terms_and_conditions: Joi.bool().required(),
+  // get_communication: Joi.bool().optional(),
+  // agrees_terms_and_conditions: Joi.bool().required(),
 };
 
 router.post(
@@ -39,7 +39,7 @@ router.post(
   celebrate({
     [Segments.BODY]: Joi.object({
       client_entity_id: Joi.string().required(),
-      password: Joi.string().trim().required(),
+      // password: Joi.string().trim().required(),
       ...userCelebrate,
     }),
   }),
@@ -133,7 +133,8 @@ router.post(
     [Segments.BODY]: Joi.object({
       client_entity_id: Joi.string().required(),
       email: Joi.string().lowercase().trim().required(),
-      password: Joi.string().trim().required(),
+      password: Joi.string().trim(),
+      // password: Joi.string().trim().required(),
     }),
   }),
   async (req: any, res: Response) => {

@@ -173,7 +173,7 @@ export class BidService3 {
     const obp:any = {
       count: bidCount,
       bid: {
-        entity_id: ob[EntityId],
+        entity_id: ob[EntityId as any],
         amount: ob.amount,
         // created_at: ob.created_at,
         created_at: moment
@@ -181,17 +181,17 @@ export class BidService3 {
           .tz("Africa/Johannesburg"),
         status: ob.status,
         user: {
-          entity_id: user[EntityId],
+          entity_id: user[EntityId as any],
           name: user.name,
           surname: user.surname,
         },
         bidder: {
-          entity_id: bidder[EntityId],
+          entity_id: bidder[EntityId as any],
           paddle_number: bidder.paddle_number,
           is_verified: bidder.is_verified,
         },
         lot: {
-          entity_id: lot[EntityId],
+          entity_id: lot[EntityId as any],
           lot_number: lot.lot_number,
           title: lot.title,
         },
@@ -308,7 +308,7 @@ export class BidService3 {
     const obp: IObjBid = {
       count: bidCount,
       bid: {
-        entity_id: b[EntityId],
+        entity_id: b[EntityId as any],
         amount: b.amount,
         created_at: moment
           .unix(parseFloat(b.created_at.toString()))
@@ -325,7 +325,7 @@ export class BidService3 {
           is_verified: true,
         },
         lot: {
-          entity_id: lot[EntityId],
+          entity_id: lot[EntityId as any],
           lot_number: lot.lot_number,
           title: lot.title,
         },
@@ -395,7 +395,7 @@ export class BidService3 {
     const obp: IObjBid = {
       count: bidCount,
       bid: {
-        entity_id: b[EntityId],
+        entity_id: b[EntityId as any],
         amount: b.amount,
         created_at: moment
           .unix(parseFloat(b.created_at.toString()))
@@ -412,7 +412,7 @@ export class BidService3 {
           is_verified: true,
         },
         lot: {
-          entity_id: lot[EntityId],
+          entity_id: lot[EntityId as any],
           lot_number: lot.lot_number,
           title: lot.title,
         },
@@ -448,7 +448,7 @@ export class BidService3 {
       .and("status")
       .eq(BID_ACTIVE)
       .sortBy("amount", "DESC")
-      .return.page(page, limit);
+         .return.all();
 
     // console.log("Bids fetched", bids);
 
@@ -503,13 +503,13 @@ export class BidService3 {
       }
 
       formattedBids.push({
-        entity_id: bid[EntityId],
+        entity_id: bid[EntityId as any],
         amount: bid.amount,
         created_at: bid.created_at,
         status: bid.status,
         bidder: bdr
           ? {
-              entity_id: bdr[EntityId],
+              entity_id: bdr[EntityId as any],
               paddle_number: bdr.paddle_number,
               is_verified: bdr.is_verified,
             }
@@ -520,7 +520,7 @@ export class BidService3 {
             },
         user: usr
           ? {
-              entity_id: usr[EntityId],
+              entity_id: usr[EntityId as any],
               name: usr?.name,
               surname: usr?.surname,
             }
@@ -565,7 +565,7 @@ export class BidService3 {
 
     this.rtc_di.broadcastRejectedBid(
       bid.lot_entity_id.toString(),
-      bid[EntityId]
+      bid[EntityId as any]
     );
 
     return ob;
@@ -593,7 +593,7 @@ export class BidService3 {
         parseFloat(b.amount.toString()) > parseFloat(bid.amount.toString())
       );
     });
-    const bidsToRejectIDs = bidsToReject.map((b) => b[EntityId]);
+    const bidsToRejectIDs = bidsToReject.map((b) => b[EntityId as any]);
 
     // Send a firebase notification
     const rejectingBidUserIDs = new Set<string>();
@@ -619,7 +619,7 @@ export class BidService3 {
     // Back-up the bids
     const multi = redisClient.multi();
     for (const b of bidsToReject) {
-      multi.json.set(`BID:${b[EntityId]}`, "$", {
+      multi.json.set(`BID:${b[EntityId as any]}`, "$", {
         ...b,
         updated_at: moment().tz("Africa/Johannesburg").unix(),
         status: BID_REJECTED,
@@ -644,7 +644,7 @@ export class BidService3 {
     const multi = redisClient.multi();
 
     for (const bid of bids) {
-      multi.json.del(`BID:${bid[EntityId]}`);
+      multi.json.del(`BID:${bid[EntityId as any]}`);
     }
 
     multi.exec();
@@ -661,7 +661,7 @@ export class BidService3 {
     let totalDeleted = 0;
 
     for (const lot of lots) {
-      const bidsDeleted = await this.deleteAllForLot(lot[EntityId]);
+      const bidsDeleted = await this.deleteAllForLot(lot[EntityId as any]);
       totalDeleted += bidsDeleted;
     }
 
@@ -685,12 +685,12 @@ export class BidService3 {
     const alreadyRetrievedAuctions: any[] = [];
 
     for (const bidForUser of bidsForUser) {
-      bidForUser.entity_id = bidForUser[EntityId];
+      bidForUser.entity_id = bidForUser[EntityId as any];
 
       let lot = null;
       if (
         alreadyRetrievedLots.findIndex(
-          (x) => x[EntityId] === bidForUser.lot_entity_id.toString()
+          (x) => x[EntityId as any] === bidForUser.lot_entity_id.toString()
         ) === -1
       ) {
         // here we have not yet retrieved the lot
@@ -705,7 +705,7 @@ export class BidService3 {
             .sortBy("amount", "DESC")
             .return.first();
 
-          lot.entity_id = lot[EntityId];
+          lot.entity_id = lot[EntityId as any];
           lot.bids = [];
           lot.highest_bid = highestBidForLot; // and this can be null, or any other user's bid
           alreadyRetrievedLots.push(lot);
@@ -714,7 +714,7 @@ export class BidService3 {
         }
       } else {
         lot = alreadyRetrievedLots.find(
-          (x) => x[EntityId] === bidForUser.lot_entity_id.toString()
+          (x) => x[EntityId as any] === bidForUser.lot_entity_id.toString()
         );
       }
 
@@ -723,7 +723,7 @@ export class BidService3 {
         let auction = null;
         if (
           alreadyRetrievedAuctions.findIndex(
-            (x) => x[EntityId] === lot.auction_entity_id.toString()
+            (x) => x[EntityId as any] === lot.auction_entity_id.toString()
           ) === -1
         ) {
           // here we have not yet retrieved the auction
@@ -731,7 +731,7 @@ export class BidService3 {
             lot.auction_entity_id.toString()
           );
           if (auction?.client_entity_id) {
-            auction.entity_id = auction[EntityId];
+            auction.entity_id = auction[EntityId as any];
             auction.lots = [];
             alreadyRetrievedAuctions.push(auction);
           } else {
@@ -739,14 +739,14 @@ export class BidService3 {
           }
         } else {
           auction = alreadyRetrievedAuctions.find(
-            (x) => x[EntityId] === lot.auction_entity_id.toString()
+            (x) => x[EntityId as any] === lot.auction_entity_id.toString()
           );
         }
 
         // admin might have deleted the auction, so we need to perform a truthy check
         if (auction) {
           if (
-            auction.lots.findIndex((x) => x[EntityId] === lot[EntityId]) === -1
+            auction.lots.findIndex((x) => x[EntityId as any] === lot[EntityId as any]) === -1
           ) {
             // add the bid we are busy with, to the lot
             lot.bids = [bidForUser];
@@ -762,7 +762,7 @@ export class BidService3 {
             // add the bid to the lot if it does not exist in there yet
             if (
               lot.bids.findIndex(
-                (x) => x[EntityId] === bidForUser[EntityId]
+                (x) => x[EntityId as any] === bidForUser[EntityId as any]
               ) === -1
             ) {
               lot.bids.push(bidForUser);

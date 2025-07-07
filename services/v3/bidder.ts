@@ -62,7 +62,7 @@ export class BidderService3 {
     return paddedPaddleNumber;
   }
 
-  public async register(id_number: string, address: string, bidder: IBidder) {
+   public async register(id_number: string, address: string, bidder: IBidder,fullname: string, email: string,cell_phone: number) {
     // check if bidder is not already registered
     const existingBidder = bidder.registered_auction_id
       ? await BidderRepository.search()
@@ -108,6 +108,9 @@ export class BidderService3 {
       ...bidder,
       is_verified: false, // we're registering, this must be false here
       created_at: moment().tz("Africa/Johannesburg").unix(),
+      fullname: fullname,
+      email: email,
+      cell_phone: cell_phone
     };
 
     const newHashKey = `${"BIDDER:"}${getULID()}`;
@@ -118,6 +121,9 @@ export class BidderService3 {
       ...existingUser,
       id_number,
       address,
+      fullname: fullname,
+      email: email,
+      cell_phone: cell_phone
     }); // save the user with id_number and address
     multi.exec();
 
@@ -132,7 +138,7 @@ export class BidderService3 {
     return obr;
   }
 
-  public async update(entity_id: string, id_number: string, address: string) {
+  public async update(entity_id: string, id_number: string, address: string, fullname: any, email: any,cell_number:any) {
     const bidder = await BidderRepository.fetch(entity_id);
 
     if (!bidder.client_entity_id) {
@@ -151,6 +157,9 @@ export class BidderService3 {
       ...user,
       id_number,
       address,
+      fullname,
+      email,
+      cell_number,
       updated_at: updatedAt,
     });
 

@@ -8,15 +8,18 @@ export interface IUser extends Entity {
   password: string;
   get_communication?: boolean;
   agrees_terms_and_conditions: boolean;
-  id_number?: string;
+  id_number?: any;
   address?: string;
+  role?:string;
+  salt?:string;
+  created_at?:any;
   device?: {
     device_id: string;
     firebase_token: string;
   };
   cell_phone: {
-    calling_code: string;
-    country_code: string;
-    number: string;
+    calling_code: any;
+    country_code: any;
+    number: any;
   };
 }

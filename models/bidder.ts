@@ -5,6 +5,9 @@ import { Entity } from "redis-om";
 // instead of an auction_entity_id.
 export interface IBidder extends Entity {
   client_entity_id: string;
+  fullname?:string;
+  email?:string;
+  cell_phone?:any;
   user_entity_id: string;
   is_verified: boolean;
   registered_auction_id?: string;

@@ -26,6 +26,18 @@ router.post(
       id_number: Joi.string().required(),
       address: Joi.string().required(),
       auction_id: Joi.string().optional(),
+      fullname: Joi.string().required(),
+      email: Joi.string().required(),
+      cell_phone: Joi.object({
+        calling_code: Joi.string()
+          .pattern(
+            /^\+/, //
+            "Needs to start with a + sign.",
+          )
+          .required(), // eg: +27
+    country_code: Joi.string().required(), // eg: ZA
+    number: Joi.string().trim().required(), // eg: 0123456789
+  }).required(),
       bidder: Joi.object({
         client_entity_id: Joi.string().required(),
         user_entity_id: Joi.string().required(),
@@ -39,8 +51,8 @@ router.post(
   async (req: any, res: Response) => {
     try {
       const { body, user_details } = req;
-      const { id_number, address, bidder } = body;
-      const response = await bidderService.register(id_number, address, bidder);
+      const { id_number, address, bidder,fullname,email,cell_phone } = body;
+      const response = await bidderService.register(id_number, address, bidder,fullname,email,cell_phone);
       if (
         response &&
         bidder?.client_entity_id == "01J7KQPJ3D8CB000FM549T5ZC5"
@@ -116,17 +128,32 @@ router.put(
       entity_id: Joi.string().required(),
       id_number: Joi.string().required(),
       address: Joi.string().required(),
+      fullname: Joi.string().required(),
+      email: Joi.string().required(),
+      cell_phone: Joi.object({
+        calling_code: Joi.string()
+          .pattern(
+            /^\+/, //
+            "Needs to start with a + sign.",
+          )
+          .required(), // eg: +27
+    country_code: Joi.string().required(), // eg: ZA
+    number: Joi.string().trim().required(), // eg: 0123456789
+  }).required(),
     }),
   }),
   // isAuthorized,
   async (req: any, res: Response) => {
     try {
       const { body, user_details } = req;
-      const { entity_id, id_number, address } = body;
+      const { entity_id, id_number, address, fullname, email,cell_phone } = body;
       const response = await bidderService.update(
         entity_id,
         id_number,
-        address
+        address,
+        fullname,
+        email,
+        cell_phone
       );
       return res
         .json(success("Successfully updated bidder!", response))

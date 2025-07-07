@@ -18,7 +18,7 @@ interface IUserWithTokenResponse {
   user: {
     entity_id: string;
     name: string;
-    surname: string;
+    surname?: string;
     email: string;
     // Not advised to return more here - rather let the FE call the get(user_entity_id) method below.
   };
@@ -42,20 +42,20 @@ export class UserService3 {
     }
 
     const salt = randomBytes(32);
-    const hashedPassword = await argon2.hash(user.password, {
-      salt: salt,
-    });
+    // const hashedPassword = await argon2.hash(user.password, {
+    //   salt: salt,
+    // });
 
-    const u: IUser = {
+    const u: any = {
       ...user,
       role: "user",
-      salt: salt.toString("hex"),
-      password: hashedPassword,
+      // salt: salt.toString("hex"),
+      // password: hashedPassword,
       created_at: moment().tz("Africa/Johannesburg").unix(),
     };
 
     const userRepo = await UserRepository.save(u);
-    const entityId = userRepo[EntityId];
+    const entityId = userRepo[EntityId as any];
 
     const token = await generateTokenNew({
       entity_id: entityId,
@@ -68,7 +68,7 @@ export class UserService3 {
       user: {
         entity_id: entityId,
         name: user.name,
-        surname: user.surname,
+        // surname: user.surname,
         email: user.email,
       },
       token: token,
@@ -87,31 +87,33 @@ export class UserService3 {
       throw new ValidationError(`User already exists.`);
     }
 
-    const randomSalt = randomBytes(32);
-    const sixDigitPass = Math.floor(100000 + Math.random() * 900000); // 6 digit random number
-    const hashedPassword = await argon2.hash(sixDigitPass.toString(), {
-      salt: randomSalt,
-    });
+    // const randomSalt = randomBytes(32);
+    // const sixDigitPass = Math.floor(100000 + Math.random() * 900000); // 6 digit random number
+    // const hashedPassword = await argon2.hash(sixDigitPass.toString(), {
+    //   salt: randomSalt,
+    // });
 
-    const u: IUser = {
+    const u: any = {
       ...user,
       role: "user",
-      salt: randomSalt.toString("hex"),
-      password: hashedPassword,
+      // salt: randomSalt.toString("hex"),
+      // password: hashedPassword,
       created_at: moment().tz("Africa/Johannesburg").unix(),
     };
 
     const userRepo = await UserRepository.save(u);
-    const entityId = userRepo[EntityId];
+    const entityId = userRepo[EntityId as any];
 
     // return everything but exclude the salt and password
 
-    const { salt, password, ...rest } = userRepo;
+    // const { salt, password, ...rest } = userRepo;
+
+    const {  ...rest } = userRepo;
 
     return {
       ...rest,
       entity_id: entityId,
-      naked_password: sixDigitPass.toString(),
+      // naked_password: sixDigitPass.toString(),
     };
   }
 
@@ -134,10 +136,10 @@ export class UserService3 {
     delete updatedUser.password;
     delete updatedUser.salt;
 
-    // return { ...updatedUser, entity_id: existingUser[EntityId] };
+    // return { ...updatedUser, entity_id: existingUser[EntityId as any] };
 
     const token = await generateTokenNew({
-      entity_id: existingUser[EntityId],
+      entity_id: existingUser[EntityId as any],
       email: updatedUser.email.toString(),
       name: updatedUser.name.toString(),
       role: "user",
@@ -147,7 +149,7 @@ export class UserService3 {
       user: {
         // Note this returns the whole user object, but without the password and salt.
         ...updatedUser,
-        entity_id: existingUser[EntityId],
+        entity_id: existingUser[EntityId as any],
       },
       token: token,
     };
@@ -165,17 +167,17 @@ export class UserService3 {
       throw new ValidationError(`User does not exist.`);
     }
 
-    const validPassword = await argon2.verify(existingUser.password.toString(), password);
+    // const validPassword = await argon2.verify(existingUser.password.toString(), password);
 
-    if (validPassword) {
+    if (email) {
       // update last login date
-      await UserRepository.save(existingUser[EntityId], {
+      await UserRepository.save(existingUser[EntityId as any], {
         ...existingUser,
         last_login: moment().tz("Africa/Johannesburg").unix(),
       });
 
       const token = await generateTokenNew({
-        entity_id: existingUser[EntityId],
+        entity_id: existingUser[EntityId as any],
         email: existingUser.email.toString(),
         name: existingUser.name.toString(),
         role: "user",
@@ -183,9 +185,9 @@ export class UserService3 {
 
       return {
         user: {
-          entity_id: existingUser[EntityId],
+          entity_id: existingUser[EntityId as any],
           name: existingUser.name.toString(),
-          surname: existingUser.surname.toString(),
+          // surname: existingUser.surname.toString(),
           email: existingUser.email.toString(),
         },
         token: token,
@@ -200,7 +202,7 @@ export class UserService3 {
 
     if (user) {
       const { password, salt, ...rest } = user;
-      return { ...rest, entity_id: user[EntityId] };
+      return { ...rest, entity_id: user[EntityId as any] };
     } else {
       throw new ValidationError(`Could not find user by entity id.`);
     }
@@ -215,7 +217,7 @@ export class UserService3 {
     // new array where we dont return the password and salt
     const users = foundUsers.map((u) => {
       const { password, salt, ...rest } = u;
-      return { ...rest, entity_id: u[EntityId] };
+      return { ...rest, entity_id: u[EntityId as any] };
     });
 
     return users;
@@ -247,13 +249,13 @@ export class UserService3 {
     }
 
     const token = jwt.sign(
-      { user_entity_id: user[EntityId], role: user.role },
+      { user_entity_id: user[EntityId as any], role: user.role },
       process.env.JWT_SECRET ?? "", //
       { expiresIn: `15m` },
     );
 
-    const resetToken = await ResetTokenRepository.save({ reset_token: token, user_entity_id: user[EntityId] });
-    ResetTokenRepository.expire(resetToken[EntityId], 900); // 900 seconds = 15 minutes
+    const resetToken = await ResetTokenRepository.save({ reset_token: token, user_entity_id: user[EntityId as any] });
+    ResetTokenRepository.expire(resetToken[EntityId as any], 900); // 900 seconds = 15 minutes
 
     const resetPasswordLink = `${process.env.WEBSITE_URL}/#/reset_password/${encodeURIComponent(resetToken.reset_token.toString())}`;
     console.log("resetPasswordLink", resetPasswordLink);
@@ -316,7 +318,7 @@ export class UserService3 {
 
       // const token = await generateToken(userObj);
       const token = await generateTokenNew({
-        entity_id: user[EntityId],
+        entity_id: user[EntityId as any],
         email: user.email.toString(),
         name: user.name.toString(),
         role: user.role.toString(),
@@ -324,12 +326,12 @@ export class UserService3 {
 
       // Delete all reset tokens for this user.
       for (const record of records) {
-        await ResetTokenRepository.remove(record[EntityId]);
+        await ResetTokenRepository.remove(record[EntityId as any]);
       }
 
       return {
         user: {
-          entity_id: user[EntityId],
+          entity_id: user[EntityId as any],
           name: user.name.toString(),
           surname: user.surname.toString(),
           email: user.email.toString(),
@@ -352,10 +354,10 @@ export class UserService3 {
     user.salt = salt.toString("hex");
     user.password = hashedPassword;
 
-    await UserRepository.save(user[EntityId], user);
+    await UserRepository.save(user[EntityId as any], user);
 
     const token = await generateTokenNew({
-      entity_id: user[EntityId],
+      entity_id: user[EntityId as any],
       email: user.email.toString(),
       name: user.name.toString(),
       role: user.role.toString(),
@@ -363,7 +365,7 @@ export class UserService3 {
 
     return {
       user: {
-        entity_id: user[EntityId],
+        entity_id: user[EntityId as any],
         name: user.name.toString(),
         surname: user.surname.toString(),
         email: user.email.toString(),
@@ -389,8 +391,8 @@ export class UserService3 {
     // 6 digit otp
     const otp = Math.floor(100000 + Math.random() * 900000);
 
-    const otpRecord = await OTPRepository.save({ otp: otp.toString(), user_entity_id: user[EntityId] });
-    OTPRepository.expire(otpRecord[EntityId], 900); // 900 seconds = 15 minutes
+    const otpRecord = await OTPRepository.save({ otp: otp.toString(), user_entity_id: user[EntityId as any] });
+    OTPRepository.expire(otpRecord[EntityId as any], 900); // 900 seconds = 15 minutes
 
     try {
       await sendEmail({
@@ -436,7 +438,7 @@ export class UserService3 {
     console.log("otp", otp);
     const otpRecord = await OTPRepository.search() //
       .where("user_entity_id")
-      .eq(user[EntityId])
+      .eq(user[EntityId as any])
       .and("otp")
       .eq(otp)
       .return.first();
@@ -447,22 +449,22 @@ export class UserService3 {
       const hashedPassword = await argon2.hash(new_password, { salt });
       user.salt = salt.toString("hex");
       user.password = hashedPassword;
-      await UserRepository.save(user[EntityId], user);
+      await UserRepository.save(user[EntityId as any], user);
 
       // const token = await generateToken(userObj);
       const token = await generateTokenNew({
-        entity_id: user[EntityId],
+        entity_id: user[EntityId as any],
         email: user.email.toString(),
         name: user.name.toString(),
         role: user.role.toString(),
       });
 
       // Delete the otp record.
-      await OTPRepository.remove(otpRecord[EntityId]);
+      await OTPRepository.remove(otpRecord[EntityId as any]);
 
       return {
         user: {
-          entity_id: user[EntityId],
+          entity_id: user[EntityId as any],
           name: user.name.toString(),
           surname: user.surname.toString(),
           email: user.email.toString(),
@@ -487,11 +489,11 @@ export class UserService3 {
 
     // add to deacticcation repository
     // then delete user
-    const multi = redisClient.multi();
+    const multi:any = redisClient.multi();
 
     multi.json.del(`USER:${user_entity_id}`);
     // preserve the user key (entity_id) in the deactivated user's list
-    multi.json.set(`DEACTIVATEDUSERS:${user[EntityId]}`, "$", {
+    multi.json.set(`DEACTIVATEDUSERS:${user[EntityId as any]}`, "$", {
       ...user,
       deactivated_at: moment().tz("Africa/Johannesburg").unix(),
     });
