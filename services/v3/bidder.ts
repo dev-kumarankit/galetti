@@ -62,7 +62,14 @@ export class BidderService3 {
     return paddedPaddleNumber;
   }
 
-   public async register(id_number: string, address: string, bidder: IBidder,fullname: string, email: string,cell_phone: number) {
+  public async register(
+    id_number: string,
+    address: string,
+    bidder: IBidder,
+    fullname: string,
+    email: string,
+    cell_phone: number
+  ) {
     // check if bidder is not already registered
     const existingBidder = bidder.registered_auction_id
       ? await BidderRepository.search()
@@ -110,21 +117,29 @@ export class BidderService3 {
       created_at: moment().tz("Africa/Johannesburg").unix(),
       fullname: fullname,
       email: email,
-      cell_phone: cell_phone
+      cell_phone: cell_phone,
     };
 
     const newHashKey = `${"BIDDER:"}${getULID()}`;
 
     const multi = redisClient.multi();
     multi.json.set(newHashKey, "$", objToSave); // save the bidder
-    multi.json.set(`USER:${bidder.user_entity_id}`, "$", {
-      ...existingUser,
+
+    const userPayload: any = {
       id_number,
       address,
-      fullname: fullname,
-      email: email,
-      cell_phone: cell_phone
-    }); // save the user with id_number and address
+      fullname,
+      cell_phone,
+    };
+
+    if (existingUser) {
+      Object.assign(userPayload, existingUser); // Merge existingUser if available
+    } else {
+      userPayload.email = email; // Only add email if user doesn't exist
+    }
+
+    multi.json.set(`USER:${bidder.user_entity_id}`, "$", userPayload);
+
     multi.exec();
 
     const obr = {
@@ -138,7 +153,14 @@ export class BidderService3 {
     return obr;
   }
 
-  public async update(entity_id: string, id_number: string, address: string, fullname: any, email: any,cell_number:any) {
+  public async update(
+    entity_id: string,
+    id_number: string,
+    address: string,
+    fullname: any,
+    email: any,
+    cell_number: any
+  ) {
     const bidder = await BidderRepository.fetch(entity_id);
 
     if (!bidder.client_entity_id) {
