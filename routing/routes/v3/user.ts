@@ -193,13 +193,15 @@ router.get(
   celebrate({
     [Segments.QUERY]: Joi.object({
       client_entity_id: Joi.string().required(),
+      page: Joi.string().required(),
+      limit: Joi.string().required(),
     }),
   }),
   async (req: any, res: Response) => {
     try {
-      const { client_entity_id } = req.query;
+      // const { client_entity_id } = req.query;
 
-      const resp = await userService.usersForClient(client_entity_id);
+      const resp = await userService.usersForClient(req.query);
 
       return res.json(success("Successfully fetched all users!", resp)).status(200).end();
     } catch (e) {

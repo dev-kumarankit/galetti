@@ -331,37 +331,57 @@ export class BidderService3 {
     return biddersWithUsers;
   }
 
-  public async unregisteredBiddersForClient(client_entity_id: string) {
-    const allUsersforClient = await UserRepository.search() //
-      .where("client_entity_id")
-      .eq(client_entity_id)
-      .return.all();
+ public async unregisteredBiddersForClient(queryParams: any) {
+  const { client_entity_id, page = 1, limit = 10 } = queryParams;
 
-    const allBiddersforClient = await BidderRepository.search() //
-      .where("client_entity_id")
-      .eq(client_entity_id)
-      .return.all();
+  // Parse and clamp values
+  const pageNumber = parseInt(page, 10);
+  const rawLimit = parseInt(limit, 10);
+  const limitNumber = Math.min(rawLimit, 100); // max 100
+  const offset = (pageNumber - 1) * limitNumber;
 
-    // get all users that are not registered. they are un-registered if they are not inside allBiddersforClient
-    const unregisteredUsers = allUsersforClient.filter((ufc) => {
-      return !allBiddersforClient.find(
-        (bfc) => bfc.user_entity_id === ufc[EntityId as any]
-      );
-    });
+  // Fetch all users and bidders for the client
+  const allUsersforClient = await UserRepository.search()
+    .where("client_entity_id")
+    .eq(client_entity_id)
+    .return.all();
 
-    // only return what is needed. mainly to avoid sending back the password, salt, etc
-    const users = unregisteredUsers.map((u) => {
-      return {
-        entity_id: u[EntityId as any],
-        name: u.name,
-        surname: u.surname,
-        email: u.email,
-        // cell_phone: u.cell_phone,
-      };
-    });
+  const allBiddersforClient = await BidderRepository.search()
+    .where("client_entity_id")
+    .eq(client_entity_id)
+    .return.all();
 
-    return users;
-  }
+  // Filter out registered bidders
+  const unregisteredUsers = allUsersforClient.filter((ufc) => {
+    return !allBiddersforClient.find(
+      (bfc) => bfc.user_entity_id === ufc[EntityId as any]
+    );
+  });
+
+  // Remove sensitive info and map to required fields
+  const cleanUsers = unregisteredUsers.map((u) => ({
+    entity_id: u[EntityId as any],
+    name: u.name,
+    surname: u.surname,
+    email: u.email,
+    // cell_phone: u.cell_phone,
+  }));
+
+  const totalRecords = cleanUsers.length;
+  const totalPages = Math.ceil(totalRecords / limitNumber);
+
+  // Paginate result
+  const paginatedUsers = cleanUsers.slice(offset, offset + limitNumber);
+
+  return {
+    totalRecords,
+    page: pageNumber,
+    limit: limitNumber,
+    lastPage: totalPages,
+    users: paginatedUsers,
+  };
+}
+
 
   public async regeneratePaddleNumber(bidder_entity_id: string) {
     const bidder = await BidderRepository.fetch(bidder_entity_id);
