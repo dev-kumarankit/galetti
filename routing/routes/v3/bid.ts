@@ -22,6 +22,7 @@ router.post(
       user_entity_id: Joi.string().required(),
       amount: Joi.number().optional(),
       increment: Joi.number().optional(),
+      soft_time: Joi.number().optional(),
     })
       .or("amount", "increment")
       .xor("amount", "increment"),

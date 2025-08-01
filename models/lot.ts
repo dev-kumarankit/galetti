@@ -8,6 +8,8 @@ export interface ILot extends Entity {
   starting_price?: number;
   reserve_price?: number;
   status: string;
+  date_from: Date;
+  date_to: Date;
   type: string;
   youtube_url?: string;
   lot_number: number;

@@ -10,12 +10,60 @@ import { LotService3 } from "../../../services/v3/lot";
 
 const router = Router();
 const lotService = Container.get(LotService3);
+const customJoi = Joi.extend((joi) => ({
+  type: "isoDateTime",
+  base: joi.string(),
+  messages: {
+    "isoDateTime.base": "{{#label}} must be a valid ISO 8601 date with time and timezone",
+  },
+  validate(value, helpers) {
+    // Regular expression to match ISO 8601 date with time and timezone
+    const isoDateTimeRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
+    if (!isoDateTimeRegex.test(value)) {
+      return { value, errors: helpers.error("isoDateTime.base") };
+    }
+  },
+}));
 
 const lotCelebrate = {
+  date_from: customJoi.isoDateTime().required(),
+  date_to: customJoi.isoDateTime().required(),
   title: Joi.string().required(),
   description: Joi.string().required(),
   broker_name: Joi.string().allow(null).optional(),
   starting_price: Joi.alternatives()
+  .try(Joi.number(), Joi.string().allow(""))
+  .default(0)
+  .custom((value, helpers) => {
+    if (value === "") {
+      return 0;
+    }
+    return value;
+  }),
+  reserve_price: Joi.alternatives()
+  .try(Joi.number(), Joi.string().allow(""), Joi.valid(null))
+  .default(0)
+  .custom((value, helpers) => {
+    if (value === ""|| value === null) {
+      return 0;
+    }
+    return value;
+  }),
+  youtube_url: Joi.string().optional().allow(null, ""),
+  status: Joi.string()
+  .valid(...LOT_STATUSES)
+  .required(),
+  lot_number: Joi.number().optional().allow(null),
+  location: Joi.object({
+    full_address: Joi.string().required(),
+    latitude: Joi.string().required(),
+    longitude: Joi.string().required(),
+  })
+  .optional()
+  .allow(null),
+  vendor_bidding: Joi.object({
+    enabled: Joi.boolean().required(),
+    bid_increment: Joi.alternatives()
     .try(Joi.number(), Joi.string().allow(""))
     .default(0)
     .custom((value, helpers) => {
@@ -24,51 +72,19 @@ const lotCelebrate = {
       }
       return value;
     }),
- reserve_price: Joi.alternatives()
-    .try(Joi.number(), Joi.string().allow(""), Joi.valid(null))
+    bid_limit: Joi.alternatives()
+    .try(Joi.number(), Joi.string().allow(""))
     .default(0)
     .custom((value, helpers) => {
-      if (value === ""|| value === null) {
+      if (value === "") {
         return 0;
       }
       return value;
     }),
-  youtube_url: Joi.string().optional().allow(null, ""),
-  status: Joi.string()
-    .valid(...LOT_STATUSES)
-    .required(),
-  lot_number: Joi.number().optional().allow(null),
-  location: Joi.object({
-    full_address: Joi.string().required(),
-    latitude: Joi.string().required(),
-    longitude: Joi.string().required(),
-  })
-    .optional()
-    .allow(null),
-  vendor_bidding: Joi.object({
-    enabled: Joi.boolean().required(),
-    bid_increment: Joi.alternatives()
-      .try(Joi.number(), Joi.string().allow(""))
-      .default(0)
-      .custom((value, helpers) => {
-        if (value === "") {
-          return 0;
-        }
-        return value;
-      }),
-    bid_limit: Joi.alternatives()
-      .try(Joi.number(), Joi.string().allow(""))
-      .default(0)
-      .custom((value, helpers) => {
-        if (value === "") {
-          return 0;
-        }
-        return value;
-      }),
     timeout: Joi.number().required(), // should be seconds
   })
-    .optional()
-    .allow(null),
+  .optional()
+  .allow(null),
   contacts: Joi.object({
     email: Joi.string().optional().allow(null, ""),
     phone: Joi.object({
@@ -76,27 +92,39 @@ const lotCelebrate = {
       country_code: Joi.string().required(),
       calling_code: Joi.string().required(),
     })
-      .optional()
-      .allow(null),
+    .optional()
+    .allow(null),
     whatsapp: Joi.object({
       number: Joi.string().optional().allow(null, ""),
       country_code: Joi.string().required(),
       calling_code: Joi.string().required(),
     })
-      .optional()
-      .allow(null),
+    .optional()
+    .allow(null),
   })
-    .optional()
-    .allow(null),
+  .optional()
+  .allow(null),
   extra_data: Joi.array()
-    .items(
-      Joi.object({
-        key: Joi.string().required(),
-        value: Joi.string().required(),
-      })
-    )
-    .optional()
-    .allow(null),
+  .items(
+    Joi.object({
+      key: Joi.string().required(),
+      value: Joi.string().required(),
+    })
+  )
+  .optional()
+  .allow(null),
+  automated: Joi.object({
+    enabled: Joi.boolean().required(),
+    soft_closing: Joi.object({
+      enabled: Joi.boolean().required(),
+      // tieout required if enabled is true
+      timeout: Joi.number().when("enabled", {
+        is: true,
+        then: Joi.number().required(),
+        otherwise: Joi.number().optional().allow(null),
+      }),
+    }).optional(),
+  }).required(),
 };
 
 router.post(
@@ -116,20 +144,20 @@ router.post(
       const { body, user_details } = req;
       const response = await lotService.createLot(body);
       return res
-        .json(success("Successfully created a lot!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully created a lot!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to create a lot!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to create a lot!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -152,20 +180,20 @@ router.put(
       const { body, user_details } = req;
       const response = await lotService.updateLot(body.entity_id, body.entity);
       return res
-        .json(success("Successfully updated a lot!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully updated a lot!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to update a lot!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to update a lot!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -183,19 +211,19 @@ router.put(
     try {
       const { body, files } = req;
       const response: any = await lotService.updateLotDetails(body.lot_id, body.other_details);
-
+      
       return res.json(success("Successfully updated a lot!", response)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to update a lot!",
-            e,
-          }),
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to update a lot!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
     }
   },
 );
@@ -210,23 +238,23 @@ router.get(
   async (req: any, res: Response) => {
     try {
       const { entity_id } = req.query;
-
+      
       const response = await lotService.getLot(entity_id);
       return res
-        .json(success("Successfully fetched lot(s)!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully fetched lot(s)!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to fetch lot(s)!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to fetch lot(s)!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -241,23 +269,23 @@ router.get(
   async (req: any, res: Response) => {
     try {
       const { auction_entity_id } = req.query;
-
+      
       const response = await lotService.lotsForAuction(auction_entity_id);
       return res
-        .json(success("Successfully fetched all lots!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully fetched all lots!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to fetch all lots!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to fetch all lots!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -272,23 +300,23 @@ router.get(
   async (req: any, res: Response) => {
     try {
       const { auction_entity_id } = req.query;
-
+      
       const response = await lotService.lotsWithBids(auction_entity_id);
       return res
-        .json(success("Successfully fetched all lots with bids!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully fetched all lots with bids!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to fetch all lots with bids!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to fetch all lots with bids!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -303,23 +331,23 @@ router.delete(
   async (req: any, res: Response) => {
     try {
       const { entity_id } = req.body;
-
+      
       const response = await lotService.deleteLot(entity_id);
       return res
-        .json(success("Successfully deleted lot(s)!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully deleted lot(s)!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to delete lot(s)!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to delete lot(s)!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -334,23 +362,23 @@ router.delete(
   async (req: any, res: Response) => {
     try {
       const { auction_entity_id } = req.body;
-
+      
       const response = await lotService.deleteAllLots(auction_entity_id);
       return res
-        .json(success("Successfully deleted all lots!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully deleted all lots!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to delete all lots!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to delete all lots!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -360,35 +388,35 @@ router.patch(
   celebrate({
     [Segments.BODY]: Joi.object({
       order: Joi.array()
-        .items(
-          Joi.object({
-            lot_entity_id: Joi.string().required(),
-            lot_number: Joi.number().required(),
-          })
-        )
-        .required(),
+      .items(
+        Joi.object({
+          lot_entity_id: Joi.string().required(),
+          lot_number: Joi.number().required(),
+        })
+      )
+      .required(),
     }),
   }),
   async (req: any, res: Response) => {
     try {
       const { order } = req.body;
-
+      
       const response = await lotService.updateLotsOrder(order);
       return res
-        .json(success("Successfully updated lots order!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully updated lots order!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to update lots order!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to update lots order!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -399,20 +427,20 @@ router.post(
     [Segments.BODY]: Joi.object({
       auction_entity_id: Joi.string().required(),
       records: Joi.array()
-        .items(
-          Joi.object({
-            lot_number: Joi.number().required(),
-            title: Joi.string().required(),
-            description: Joi.string().optional().allow(null, ""),
-            extra_data: Joi.array().items(
-              Joi.object({
-                key: Joi.string().required(),
-                value: Joi.string().required(),
-              })
-            ),
-          })
-        )
-        .required(),
+      .items(
+        Joi.object({
+          lot_number: Joi.number().required(),
+          title: Joi.string().required(),
+          description: Joi.string().optional().allow(null, ""),
+          extra_data: Joi.array().items(
+            Joi.object({
+              key: Joi.string().required(),
+              value: Joi.string().required(),
+            })
+          ),
+        })
+      )
+      .required(),
     }),
   }),
   // isAuthorized,
@@ -422,23 +450,23 @@ router.post(
     try {
       const { body, user_details } = req;
       const { auction_entity_id, records } = body;
-
+      
       const response = await lotService.uploadCSV(auction_entity_id, records);
       return res
-        .json(success("Successfully uploaded CSV lots!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully uploaded CSV lots!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to create a lot!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to create a lot!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -451,23 +479,23 @@ router.get(
   async (req: any, res: Response) => {
     try {
       // const {} = req;
-
+      
       const response = await lotService.getCSVTemplate();
       return res
-        .json(success("Successfully retrieved a CSV Template!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully retrieved a CSV Template!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to create a lot!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to create a lot!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -482,30 +510,30 @@ router.post(
   async (req: any, res: Response) => {
     try {
       const { body, user_details } = req;
-
+      
       const response = await lotService.manualPreviousCurrentNext(
         body.auction_entity_id
       );
       return res
-        .json(
-          success(
-            "Successfully retrieved the previous, current & next lot!",
-            response
-          )
+      .json(
+        success(
+          "Successfully retrieved the previous, current & next lot!",
+          response
         )
-        .status(200)
-        .end();
+      )
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to retrieve the previous, current & next lot!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to retrieve the previous, current & next lot!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -521,26 +549,26 @@ router.post(
   async (req: any, res: Response) => {
     try {
       const { body, user_details } = req;
-
+      
       const response = await lotService.manualSetCurrent(
         body.auction_entity_id,
         body.lot_entity_id
       );
       return res
-        .json(success("Successfully set the current lot!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully set the current lot!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to set the current lot!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to set the current lot!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
@@ -551,8 +579,8 @@ router.put(
     [Segments.BODY]: Joi.object({
       entity_id: Joi.string().required(),
       status: Joi.string()
-        .valid(...LOT_STATUSES)
-        .required(),
+      .valid(...LOT_STATUSES)
+      .required(),
     }),
   }),
   // isAuthorized,
@@ -565,22 +593,57 @@ router.put(
         body.status
       );
       return res
-        .json(success("Successfully updated lot status manually!", response))
-        .status(200)
-        .end();
+      .json(success("Successfully updated lot status manually!", response))
+      .status(200)
+      .end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to update lot status manually!",
-            e,
-          })
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to update lot status manually!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
     }
   }
 );
 
+
+
+router.put(
+  "/lot_status_update",
+  celebrate({
+    [Segments.BODY]: Joi.object({
+      entity_id: Joi.string().required(),
+    }),
+  }),
+  // isAuthorized,
+  // isAdmin,
+  async (req: any, res: Response) => {
+    try {
+      const { body, user_details } = req;
+      const response = await lotService.lotStatusUpdate(
+        body.entity_id,
+      );
+      return res
+      .json(success("Successfully updated lot status manually!", response))
+      .status(200)
+      .end();
+    } catch (e) {
+      console.error("🔥 error:", e);
+      return res
+      .json(
+        failure({
+          message: "Failed to update lot status manually!",
+          e,
+        })
+      )
+      .status(400)
+      .end();
+    }
+  }
+);
 export { router as lotRouter };

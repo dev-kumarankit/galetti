@@ -51,48 +51,251 @@ interface IObjBid {
 export class BidService3 {
   private rtc_di = Container.get(RealTimeCommunication);
   private firebaseService = Container.get(FirebaseService3);
-
+  
+  //   public async placeBid(bid: IBid) {
+  //     // check if the lot exists
+  //     const lot = await LotRepository.fetch(bid.lot_entity_id);
+  //     if (!lot.auction_entity_id) {
+  //       throw new ValidationError("Lot not found!");
+  //     }
+  
+  //     // check if the lot is open for bidding
+  //     if (lot.status !== LOT_BIDDING_OPEN) {
+  //       throw new ValidationError("This lot is not open for bidding!");
+  //     }
+  
+  //     // check if the user exists
+  //     const user = await UserRepository.fetch(bid.user_entity_id);
+  //     if (!user.client_entity_id) {
+  //       throw new ValidationError("User not found!");
+  //     }
+  
+  //     // check if the user is a verified bidder
+  //     const bidder = await BidderRepository.search()
+  //       .where("user_entity_id")
+  //       .eq(bid.user_entity_id)
+  //       .where("registered_auction_id")
+  //       .eq(lot.auction_entity_id)
+  //       .return.first();
+  
+  //     if (!bidder?.is_verified) {
+  //       throw new ValidationError("You are not a verified bidder!");
+  //     }
+  
+  //     const highestBid = await BidRepository.search() //
+  //       .where("lot_entity_id")
+  //       .eq(bid.lot_entity_id)
+  //       .and("status")
+  //       .eq(BID_ACTIVE)
+  //       .sortBy("amount", "DESC")
+  //       .return.first();
+  
+  //     if (bid.increment) {
+  //       const highest = parseFloat((highestBid?.amount ?? 0).toString());
+  //       // mutate the bid amount to be the highest + increment to 2 decimal places
+  //       bid.amount = parseFloat(
+  //         (highest + parseFloat(bid.increment.toString())).toFixed(2)
+  //       );
+  //       if (
+  //         parseFloat(bid.amount.toString()) <
+  //         (lot?.starting_price ? parseFloat(lot.starting_price) : 0)
+  //       ) {
+  //         throw new ValidationError(
+  //           `Your bid amount must be more than ${
+  //             lot?.starting_price ? lot.starting_price : 0
+  //           }`
+  //         );
+  //       }
+  //     } else {
+    //       if (
+  //         parseFloat(bid.amount.toString()) <
+  //         (lot?.starting_price ? parseFloat(lot.starting_price) : 0)
+  //       ) {
+  //         throw new ValidationError(
+  //           `Your bid amount must be more than ${
+  //             lot?.starting_price ? lot.starting_price : 0
+  //           }`
+  //         );
+  //       }
+  //       // can only place bid if its higher than the current highest amount
+  //       if (highestBid) {
+  //         if (bid.amount <= parseFloat(highestBid.amount.toString())) {
+  //           // amount must be higher than the highest bid.
+  //           throw new ValidationError(
+  //             `You've been outbid! Your bid amount must be more than ${formatMoney(
+  //               {
+  //                 value: highestBid.amount.toString(),
+  //               }
+  //             )}. Please refresh your screen if the problem persists.`
+  //           );
+  //         }
+  
+  //         if (highestBid.user_entity_id === bid.user_entity_id) {
+  //           // you cannot outbid yourself
+  //           // throw new ValidationError("You cannot outbid yourself!"); // Joff said we should not throw an error here and allow the user to place the bid against himself.
+  //         } else if (highestBid.user_entity_id !== bid.user_entity_id) {
+  //           // we must also check if the previous (highest bid) is this the same user nor not.
+  //           // if it is the same user, we must not send a notification to the user.
+  //           // if it is not the same user, we must send an outbid notification to the previous user.
+  
+  //           // do not even try to send a notification to a system user.
+  //           if (isSystemUser(highestBid.user_entity_id.toString()) == false) {
+  //             this.firebaseService.sendNotificationToUsers(
+  //               {
+  //                 notification: {
+  //                   title: "Outbid!",
+  //                   body: `You have been outbid on lot #${lot.lot_number} - ${lot.title}`,
+  //                 },
+  //               },
+  //               [highestBid.user_entity_id.toString()]
+  //             );
+  //           }
+  //         }
+  //       }
+  //     }
+  
+  //     // proceed to place bid in redis
+  //     const obj: IBid = {
+  //       ...bid,
+  //       created_at: moment().tz("Africa/Johannesburg").unix(),
+  //       status: BID_ACTIVE,
+  //     };
+  
+  //     const ob = await BidRepository.save(obj);
+  
+  //     const bidCount = await BidRepository.search() //
+  //       .where("lot_entity_id")
+  //       .eq(bid.lot_entity_id)
+  //       .and("status")
+  //       .eq(BID_ACTIVE)
+  //       .count();
+  
+  //     const obp:any = {
+  //       count: bidCount,
+  //       bid: {
+  //         entity_id: ob[EntityId as any],
+  //         amount: ob.amount,
+  //         // created_at: ob.created_at,
+  //         created_at: moment
+  //           .unix(parseFloat(ob.created_at.toString()))
+  //           .tz("Africa/Johannesburg"),
+  //         status: ob.status,
+  //         user: {
+  //           entity_id: user[EntityId as any],
+  //           name: user.name,
+  //           surname: user.surname,
+  //         },
+  //         bidder: {
+  //           entity_id: bidder[EntityId as any],
+  //           paddle_number: bidder.paddle_number,
+  //           is_verified: bidder.is_verified,
+  //         },
+  //         lot: {
+  //           entity_id: lot[EntityId as any],
+  //           lot_number: lot.lot_number,
+  //           title: lot.title,
+  //         },
+  //       },
+  //     };
+  
+  //      const auctionData = await AuctionRepository.fetch(lot.auction_entity_id);
+  //     console.log(obp?.bid?.amount,"obp?.bid?.amount",lot?.reserve_price,obp?.bid?.amount < lot?.reserve_price)
+  //  if (obp?.bid?.amount < lot?.reserve_price && auctionData?.automated?.enabled && lot?.reserve_price) {
+  //       // console.log(lot, "lotlotlot");
+  //       await LotRepository.save(bid.lot_entity_id, {
+  //         ...lot,
+  //         // status: LOT_STC,
+  //       });
+  
+  //       const highestBidDetails = await BidRepository.search() //
+  //         .where("lot_entity_id")
+  //         .eq(bid.lot_entity_id)
+  //         .and("status")
+  //         .eq(BID_ACTIVE)
+  //         .sortBy("amount", "DESC")
+  //         .return.first();
+  //       this.rtc_di.broadcastLotStatusForAuction(lot.auction_entity_id, {
+  //         lot_entity_id: lot[EntityId as any],
+  //         lot_number: parseInt(lot.lot_number.toString()),
+  //         auction_entity_id: lot.auction_entity_id.toString(),
+  //         title: lot.title.toString(),
+  //         status: LOT_STC,
+  //         type: lot.type.toString(),
+  //         highest_bid: highestBidDetails,
+  //       });
+  //     }else if (obp?.bid?.amount > lot?.reserve_price && auctionData?.automated?.enabled && lot?.reserve_price) {
+  //       console.log(lot, "lotlotlot");
+  //       await LotRepository.save(bid.lot_entity_id, {
+  //         ...lot,
+  //         // status: LOT_SOLD,
+  //       });
+  
+  //       const highestBidDetails = await BidRepository.search() //
+  //         .where("lot_entity_id")
+  //         .eq(bid.lot_entity_id)
+  //         .and("status")
+  //         .eq(BID_ACTIVE)
+  //         .sortBy("amount", "DESC")
+  //         .return.first();
+  //       this.rtc_di.broadcastLotStatusForAuction(lot.auction_entity_id, {
+  //         lot_entity_id: lot[EntityId as any],
+  //         lot_number: parseInt(lot.lot_number.toString()),
+  //         auction_entity_id: lot.auction_entity_id.toString(),
+  //         title: lot.title.toString(),
+  //         status: LOT_SOLD,
+  //         type: lot.type.toString(),
+  //         highest_bid: highestBidDetails,
+  //       });
+  //     }
+  //     // broadcast the bid to the lot
+  //     // this.rtc_di.broadcastNewBid(bid.lot_entity_id, obp);
+  //     this.rtc_di.broadcastNewBid(lot.auction_entity_id.toString(), obp);
+  
+  //     console.log("Bid Placed!", obp);
+  
+  //     return obp;
+  //   }
+  
   public async placeBid(bid: IBid) {
     // check if the lot exists
     const lot = await LotRepository.fetch(bid.lot_entity_id);
     if (!lot.auction_entity_id) {
       throw new ValidationError("Lot not found!");
     }
-
+    
     // check if the lot is open for bidding
     if (lot.status !== LOT_BIDDING_OPEN) {
       throw new ValidationError("This lot is not open for bidding!");
     }
-
+    
     // check if the user exists
     const user = await UserRepository.fetch(bid.user_entity_id);
     if (!user.client_entity_id) {
       throw new ValidationError("User not found!");
     }
-
+    
     // check if the user is a verified bidder
     const bidder = await BidderRepository.search()
-      .where("user_entity_id")
-      .eq(bid.user_entity_id)
-      .where("registered_auction_id")
-      .eq(lot.auction_entity_id)
-      .return.first();
-
+    .where("user_entity_id")
+    .eq(bid.user_entity_id)
+    .where("registered_auction_id")
+    .eq(lot.auction_entity_id)
+    .return.first();
+    
     if (!bidder?.is_verified) {
       throw new ValidationError("You are not a verified bidder!");
     }
-
-    const highestBid = await BidRepository.search() //
-      .where("lot_entity_id")
-      .eq(bid.lot_entity_id)
-      .and("status")
-      .eq(BID_ACTIVE)
-      .sortBy("amount", "DESC")
-      .return.first();
-
+    
+    const highestBid = await BidRepository.search()
+    .where("lot_entity_id")
+    .eq(bid.lot_entity_id)
+    .and("status")
+    .eq(BID_ACTIVE)
+    .sortBy("amount", "DESC")
+    .return.first();
+    
     if (bid.increment) {
       const highest = parseFloat((highestBid?.amount ?? 0).toString());
-      // mutate the bid amount to be the highest + increment to 2 decimal places
       bid.amount = parseFloat(
         (highest + parseFloat(bid.increment.toString())).toFixed(2)
       );
@@ -117,10 +320,8 @@ export class BidService3 {
           }`
         );
       }
-      // can only place bid if its higher than the current highest amount
       if (highestBid) {
         if (bid.amount <= parseFloat(highestBid.amount.toString())) {
-          // amount must be higher than the highest bid.
           throw new ValidationError(
             `You've been outbid! Your bid amount must be more than ${formatMoney(
               {
@@ -129,17 +330,9 @@ export class BidService3 {
             )}. Please refresh your screen if the problem persists.`
           );
         }
-
-        if (highestBid.user_entity_id === bid.user_entity_id) {
-          // you cannot outbid yourself
-          // throw new ValidationError("You cannot outbid yourself!"); // Joff said we should not throw an error here and allow the user to place the bid against himself.
-        } else if (highestBid.user_entity_id !== bid.user_entity_id) {
-          // we must also check if the previous (highest bid) is this the same user nor not.
-          // if it is the same user, we must not send a notification to the user.
-          // if it is not the same user, we must send an outbid notification to the previous user.
-
-          // do not even try to send a notification to a system user.
-          if (isSystemUser(highestBid.user_entity_id.toString()) == false) {
+        
+        if (highestBid.user_entity_id !== bid.user_entity_id) {
+          if (isSystemUser(highestBid.user_entity_id.toString()) === false) {
             this.firebaseService.sendNotificationToUsers(
               {
                 notification: {
@@ -153,32 +346,78 @@ export class BidService3 {
         }
       }
     }
-
-    // proceed to place bid in redis
+    
     const obj: IBid = {
       ...bid,
       created_at: moment().tz("Africa/Johannesburg").unix(),
       status: BID_ACTIVE,
     };
-
+    
     const ob = await BidRepository.save(obj);
-
-    const bidCount = await BidRepository.search() //
-      .where("lot_entity_id")
-      .eq(bid.lot_entity_id)
-      .and("status")
-      .eq(BID_ACTIVE)
-      .count();
-
-    const obp:any = {
+    
+    const bidCount = await BidRepository.search()
+    .where("lot_entity_id")
+    .eq(bid.lot_entity_id)
+    .and("status")
+    .eq(BID_ACTIVE)
+    .count();
+    const auctionData = await AuctionRepository.fetch(lot.auction_entity_id);
+    const fallback_date_to = auctionData.date_to;
+    // let lotdata :any =[];
+    if (bid.soft_time && bid.soft_time > 0) {
+      const fallbackDateToUnix = moment(fallback_date_to).unix(); // ISO → unix seconds
+      // const originalDateTo =
+      // lot.updated_date_to != null
+      // ? new Date(lot.updated_date_to).getTime() / 1000
+      // : lot.date_to != null
+      // ? typeof lot.date_to === "string" || lot.date_to instanceof Date
+      // ? new Date(lot.date_to).getTime() / 1000
+      // : parseFloat(lot.date_to.toString())
+      // : fallbackDateToUnix;
+      const originalDateTo =
+      typeof lot.date_to === "string" || lot.date_to instanceof Date
+      ? new Date(lot.date_to).getTime() / 1000
+      : parseFloat(lot.date_to.toString());
+      const softTimeInSeconds = bid.soft_time;
+      const newUpdatedDateTo = originalDateTo + softTimeInSeconds;
+      
+      // const lotUpdate = await LotRepository.save({
+      //   ...lot,
+      //   updated_date_to: newUpdatedDateTo,
+      //   soft_time_log: {
+      //     bid_entity_id: ob[EntityId as any],
+      //     paddle_number: bidder.paddle_number,
+      //   },
+      //   updated_at: moment().tz("Africa/Johannesburg").unix(),
+      // });
+      const lotUpdate = await LotRepository.save({
+        ...lot,
+        date_to:newUpdatedDateTo,
+        updated_date_to: originalDateTo,
+        
+        soft_time_log: [
+          ...(Array.isArray(lot.soft_time_log) ? lot.soft_time_log : []),
+          {
+            bid_entity_id: ob[EntityId as any],
+            paddle_number: bidder.paddle_number,
+            soft_time: bid.soft_time,
+            time: moment().tz("Africa/Johannesburg").unix(), // optional: include timestamp
+          },
+        ],
+        updated_at: moment().tz("Africa/Johannesburg").unix(),
+      });
+      // let returndata = [...]
+      // lotdata = lotUpdate;
+    }
+    
+    const obp: any = {
       count: bidCount,
       bid: {
         entity_id: ob[EntityId as any],
         amount: ob.amount,
-        // created_at: ob.created_at,
         created_at: moment
-          .unix(parseFloat(ob.created_at.toString()))
-          .tz("Africa/Johannesburg"),
+        .unix(parseFloat(ob.created_at.toString()))
+        .tz("Africa/Johannesburg"),
         status: ob.status,
         user: {
           entity_id: user[EntityId as any],
@@ -197,65 +436,27 @@ export class BidService3 {
         },
       },
     };
-
-     const auctionData = await AuctionRepository.fetch(lot.auction_entity_id);
-    console.log(obp?.bid?.amount,"obp?.bid?.amount",lot?.reserve_price,obp?.bid?.amount < lot?.reserve_price)
- if (obp?.bid?.amount < lot?.reserve_price && auctionData?.automated?.enabled && lot?.reserve_price) {
-      // console.log(lot, "lotlotlot");
-      await LotRepository.save(bid.lot_entity_id, {
-        ...lot,
-        status: LOT_STC,
-      });
-
-      const highestBidDetails = await BidRepository.search() //
-        .where("lot_entity_id")
-        .eq(bid.lot_entity_id)
-        .and("status")
-        .eq(BID_ACTIVE)
-        .sortBy("amount", "DESC")
-        .return.first();
-      this.rtc_di.broadcastLotStatusForAuction(lot.auction_entity_id, {
-        lot_entity_id: lot[EntityId as any],
-        lot_number: parseInt(lot.lot_number.toString()),
-        auction_entity_id: lot.auction_entity_id.toString(),
-        title: lot.title.toString(),
-        status: LOT_STC,
-        type: lot.type.toString(),
-        highest_bid: highestBidDetails,
-      });
-    }else if (obp?.bid?.amount > lot?.reserve_price && auctionData?.automated?.enabled && lot?.reserve_price) {
-      console.log(lot, "lotlotlot");
-      await LotRepository.save(bid.lot_entity_id, {
-        ...lot,
-        status: LOT_SOLD,
-      });
-
-      const highestBidDetails = await BidRepository.search() //
-        .where("lot_entity_id")
-        .eq(bid.lot_entity_id)
-        .and("status")
-        .eq(BID_ACTIVE)
-        .sortBy("amount", "DESC")
-        .return.first();
-      this.rtc_di.broadcastLotStatusForAuction(lot.auction_entity_id, {
-        lot_entity_id: lot[EntityId as any],
-        lot_number: parseInt(lot.lot_number.toString()),
-        auction_entity_id: lot.auction_entity_id.toString(),
-        title: lot.title.toString(),
-        status: LOT_SOLD,
-        type: lot.type.toString(),
-        highest_bid: highestBidDetails,
-      });
-    }
-    // broadcast the bid to the lot
-    // this.rtc_di.broadcastNewBid(bid.lot_entity_id, obp);
+    const lotdata = await LotRepository.fetch(bid.lot_entity_id);
+    this.rtc_di.broadcastLotStatusForAuction(lot.auction_entity_id, {
+      lot_entity_id: lot[EntityId as any],
+      lot_number: parseInt(lot.lot_number.toString()),
+      auction_entity_id: lot.auction_entity_id.toString(),
+      title: lot.title.toString(),
+      status: lot.status,
+      type: lot.type.toString(),
+      // highest_bid: highestBidDetails,
+      lotUpdate :lotdata,
+      
+    });
+    // Removed the status update block related to SOLD/STC
+    
     this.rtc_di.broadcastNewBid(lot.auction_entity_id.toString(), obp);
-
+    
     console.log("Bid Placed!", obp);
-
+    
     return obp;
   }
-
+  
   public async placeSystemBid(
     lot_entity_id: string,
     increment: number,
@@ -265,27 +466,27 @@ export class BidService3 {
     if (!lot.auction_entity_id) {
       throw new ValidationError("Lot not found!");
     }
-
+    
     const last_bid = await BidRepository.search() //
-      .where("lot_entity_id")
-      .eq(lot_entity_id)
-      .and("status")
-      .eq(BID_ACTIVE)
-      .sortBy("created_at", "DESC")
-      .return.first();
-
+    .where("lot_entity_id")
+    .eq(lot_entity_id)
+    .and("status")
+    .eq(BID_ACTIVE)
+    .sortBy("created_at", "DESC")
+    .return.first();
+    
     const lastBidAmount = parseFloat((last_bid?.amount ?? 0).toString());
-
+    
     let system_user = null;
     switch (type) {
       case "floor":
-        system_user = FLOOR_USER;
-        break;
+      system_user = FLOOR_USER;
+      break;
       case "vendor":
-        system_user = getRandomVendorUser();
-        break;
+      system_user = getRandomVendorUser();
+      break;
     }
-
+    
     const bid: IBid = {
       lot_entity_id: lot_entity_id,
       user_entity_id: system_user.entity_id,
@@ -293,26 +494,26 @@ export class BidService3 {
       status: BID_ACTIVE,
       created_at: moment().tz("Africa/Johannesburg").unix(),
     };
-
+    
     console.log("FLOOR is placing an INCREMENTAL bid", bid);
-
+    
     const b = await BidRepository.save(bid);
-
+    
     const bidCount = await BidRepository.search() //
-      .where("lot_entity_id")
-      .eq(bid.lot_entity_id)
-      .and("status")
-      .eq(BID_ACTIVE)
-      .count();
-
+    .where("lot_entity_id")
+    .eq(bid.lot_entity_id)
+    .and("status")
+    .eq(BID_ACTIVE)
+    .count();
+    
     const obp: IObjBid = {
       count: bidCount,
       bid: {
         entity_id: b[EntityId as any],
         amount: b.amount,
         created_at: moment
-          .unix(parseFloat(b.created_at.toString()))
-          .tz("Africa/Johannesburg"),
+        .unix(parseFloat(b.created_at.toString()))
+        .tz("Africa/Johannesburg"),
         status: b.status,
         user: {
           entity_id: system_user.entity_id,
@@ -331,12 +532,12 @@ export class BidService3 {
         },
       },
     };
-
+    
     // broadcast the bid to the lot
     // this.rtc_di.broadcastNewBid(lot_entity_id, obp);
     this.rtc_di.broadcastNewBid(lot.auction_entity_id.toString(), obp);
   }
-
+  
   public async placeSystemCustomBid(
     lot_entity_id: string,
     amount: number,
@@ -346,33 +547,33 @@ export class BidService3 {
     if (!lot.auction_entity_id) {
       throw new ValidationError("Lot not found!");
     }
-
+    
     const last_bid = await BidRepository.search() //
-      .where("lot_entity_id")
-      .eq(lot_entity_id)
-      .and("status")
-      .eq(BID_ACTIVE)
-      .sortBy("created_at", "DESC")
-      .return.first();
-
+    .where("lot_entity_id")
+    .eq(lot_entity_id)
+    .and("status")
+    .eq(BID_ACTIVE)
+    .sortBy("created_at", "DESC")
+    .return.first();
+    
     const lastBidAmount = parseFloat((last_bid?.amount ?? 0).toString());
-
+    
     if (amount <= lastBidAmount) {
       throw new ValidationError(
         "The bid amount must be greater than the current highest bid."
       );
     }
-
+    
     let system_user = null;
     switch (type) {
       case "floor":
-        system_user = FLOOR_USER;
-        break;
+      system_user = FLOOR_USER;
+      break;
       case "vendor":
-        system_user = getRandomVendorUser();
-        break;
+      system_user = getRandomVendorUser();
+      break;
     }
-
+    
     const bid: IBid = {
       lot_entity_id: lot_entity_id,
       user_entity_id: system_user.entity_id, // FLOOR user
@@ -380,26 +581,26 @@ export class BidService3 {
       status: BID_ACTIVE,
       created_at: moment().tz("Africa/Johannesburg").unix(),
     };
-
+    
     console.log("FLOOR is placing a CUSTOM bid", bid);
-
+    
     const b = await BidRepository.save(bid);
-
+    
     const bidCount = await BidRepository.search() //
-      .where("lot_entity_id")
-      .eq(bid.lot_entity_id)
-      .and("status")
-      .eq(BID_ACTIVE)
-      .count();
-
+    .where("lot_entity_id")
+    .eq(bid.lot_entity_id)
+    .and("status")
+    .eq(BID_ACTIVE)
+    .count();
+    
     const obp: IObjBid = {
       count: bidCount,
       bid: {
         entity_id: b[EntityId as any],
         amount: b.amount,
         created_at: moment
-          .unix(parseFloat(b.created_at.toString()))
-          .tz("Africa/Johannesburg"),
+        .unix(parseFloat(b.created_at.toString()))
+        .tz("Africa/Johannesburg"),
         status: b.status,
         user: {
           entity_id: system_user.entity_id,
@@ -418,12 +619,12 @@ export class BidService3 {
         },
       },
     };
-
+    
     // broadcast the bid to the lot
     // this.rtc_di.broadcastNewBid(lot_entity_id, obp);
     this.rtc_di.broadcastNewBid(lot.auction_entity_id.toString(), obp);
   }
-
+  
   public async bidsForLot(
     entity_id: string,
     page: number = 0,
@@ -433,7 +634,7 @@ export class BidService3 {
     if (!lot.auction_entity_id) {
       throw new ValidationError("Lot not found!");
     }
-
+    
     //get the auction for this lot
     const auction = await AuctionRepository.fetch(
       lot.auction_entity_id.toString()
@@ -441,35 +642,35 @@ export class BidService3 {
     if (!auction) {
       throw new ValidationError("Auction was not found for this lot!");
     }
-
+    
     const bids = await BidRepository.search() //
-      .where("lot_entity_id")
-      .eq(entity_id)
-      .and("status")
-      .eq(BID_ACTIVE)
-      .sortBy("amount", "DESC")
-         .return.all();
-
+    .where("lot_entity_id")
+    .eq(entity_id)
+    .and("status")
+    .eq(BID_ACTIVE)
+    .sortBy("amount", "DESC")
+    .return.all();
+    
     // console.log("Bids fetched", bids);
-
+    
     const bidCount = await BidRepository.search() //
-      .where("lot_entity_id")
-      .eq(entity_id)
-      .and("status")
-      .eq(BID_ACTIVE)
-      .sortBy("amount", "DESC")
-      .count();
-
+    .where("lot_entity_id")
+    .eq(entity_id)
+    .and("status")
+    .eq(BID_ACTIVE)
+    .sortBy("amount", "DESC")
+    .count();
+    
     const formattedBids = [];
     for (const bid of bids) {
       let usr = null;
       let bdr = null;
-
+      
       if (isSystemUser(bid.user_entity_id.toString())) {
         const system_user = getSystemUserByEntityId(
           bid.user_entity_id.toString()
         );
-
+        
         // if the user is the floor user, we hardcode the user details here.
         usr = {
           [EntityId]: system_user.entity_id,
@@ -491,67 +692,67 @@ export class BidService3 {
           delete usr?.password;
           delete usr?.salt;
         }
-
+        
         // from bidder repository, find the bidder
         const fetchedBidder = await BidderRepository.search() //
-          .where("user_entity_id")
-          .eq(bid.user_entity_id.toString())
-          .return.first();
+        .where("user_entity_id")
+        .eq(bid.user_entity_id.toString())
+        .return.first();
         if (fetchedBidder?.client_entity_id) {
           bdr = fetchedBidder;
         }
       }
-
+      
       formattedBids.push({
         entity_id: bid[EntityId as any],
         amount: bid.amount,
         created_at: bid.created_at,
         status: bid.status,
         bidder: bdr
-          ? {
-              entity_id: bdr[EntityId as any],
-              paddle_number: bdr.paddle_number,
-              is_verified: bdr.is_verified,
-            }
-          : {
-              entity_id: "Unknown",
-              paddle_number: "Unknown",
-              is_verified: false,
-            },
+        ? {
+          entity_id: bdr[EntityId as any],
+          paddle_number: bdr.paddle_number,
+          is_verified: bdr.is_verified,
+        }
+        : {
+          entity_id: "Unknown",
+          paddle_number: "Unknown",
+          is_verified: false,
+        },
         user: usr
-          ? {
-              entity_id: usr[EntityId as any],
-              name: usr?.name,
-              surname: usr?.surname,
-            }
-          : {
-              entity_id: "Unknown",
-              name: "Unknown",
-              surname: "Unknown",
-            },
+        ? {
+          entity_id: usr[EntityId as any],
+          name: usr?.name,
+          surname: usr?.surname,
+        }
+        : {
+          entity_id: "Unknown",
+          name: "Unknown",
+          surname: "Unknown",
+        },
       });
     }
-
+    
     return {
       count: bidCount,
       bids: formattedBids,
     };
   }
-
+  
   public async reject(entity_id: string) {
     const bid = await BidRepository.fetch(entity_id);
     if (!bid.user_entity_id) {
       throw new ValidationError("Could not find the bid to reject!");
     }
-
+    
     const lot = await LotRepository.fetch(bid.lot_entity_id.toString());
-
+    
     const ob = await BidRepository.save({
       ...bid,
       updated_at: moment().tz("Africa/Johannesburg").unix(),
       status: BID_REJECTED,
     });
-
+    
     // Send a firebase notification
     this.firebaseService.sendNotificationToUsers(
       {
@@ -562,39 +763,39 @@ export class BidService3 {
       },
       [bid.user_entity_id.toString()]
     );
-
+    
     this.rtc_di.broadcastRejectedBid(
       bid.lot_entity_id.toString(),
       bid[EntityId as any]
     );
-
+    
     return ob;
   }
-
+  
   public async backUp(entity_id: string) {
     // the bid with the matching entity_id is the one to become the highest bid
     const bid = await BidRepository.fetch(entity_id);
     if (!bid.user_entity_id) {
       throw new ValidationError("Could not find the bid to back up!");
     }
-
+    
     const bids = await BidRepository.search() //
-      .where("lot_entity_id")
-      .eq(bid.lot_entity_id.toString())
-      .and("status")
-      .eq(BID_ACTIVE)
-      .sortBy("amount", "DESC")
-      .return.all();
-
+    .where("lot_entity_id")
+    .eq(bid.lot_entity_id.toString())
+    .and("status")
+    .eq(BID_ACTIVE)
+    .sortBy("amount", "DESC")
+    .return.all();
+    
     const lot = await LotRepository.fetch(bid.lot_entity_id.toString());
-
+    
     const bidsToReject = bids.filter((b) => {
       return (
         parseFloat(b.amount.toString()) > parseFloat(bid.amount.toString())
       );
     });
     const bidsToRejectIDs = bidsToReject.map((b) => b[EntityId as any]);
-
+    
     // Send a firebase notification
     const rejectingBidUserIDs = new Set<string>();
     bidsToReject.forEach((b) => {
@@ -609,13 +810,13 @@ export class BidService3 {
       },
       [...rejectingBidUserIDs]
     );
-
+    
     // Broadcast the rejected bids
     this.rtc_di.broadcastBackedUpBids(
       bid.lot_entity_id.toString(),
       bidsToRejectIDs
     );
-
+    
     // Back-up the bids
     const multi = redisClient.multi();
     for (const b of bidsToReject) {
@@ -626,67 +827,67 @@ export class BidService3 {
       });
     }
     multi.exec();
-
+    
     return bidsToRejectIDs;
   }
-
+  
   public async deleteAllForLot(lot_entity_id: string) {
     // const lot = await LotRepository.fetch(lot_entity_id);
     // if (!lot.auction_entity_id) {
     //   throw new ValidationError("Lot not found!");
     // }
-
+    
     const bids = await BidRepository.search() //
-      .where("lot_entity_id")
-      .eq(lot_entity_id)
-      .return.all();
-
+    .where("lot_entity_id")
+    .eq(lot_entity_id)
+    .return.all();
+    
     const multi = redisClient.multi();
-
+    
     for (const bid of bids) {
       multi.json.del(`BID:${bid[EntityId as any]}`);
     }
-
+    
     multi.exec();
-
+    
     return bids.length;
   }
-
+  
   public async deleteAllForAuction(auction_entity_id: string) {
     const lots = await LotRepository.search() //
-      .where("auction_entity_id")
-      .eq(auction_entity_id)
-      .return.all();
-
+    .where("auction_entity_id")
+    .eq(auction_entity_id)
+    .return.all();
+    
     let totalDeleted = 0;
-
+    
     for (const lot of lots) {
       const bidsDeleted = await this.deleteAllForLot(lot[EntityId as any]);
       totalDeleted += bidsDeleted;
     }
-
+    
     return totalDeleted;
   }
-
+  
   public async biddingHistoryForUser(user_entity_id: string) {
     // 1. gather all bids for the user
     // 2. gather all lots for the user based on the bids
     // 3. gather all auctions for the user based on the lots
     // 4. then from bids - lots - auctions, we go auctions - lots - bids
-
+    
     const bidsForUser = await BidRepository.search() //
-      .where("user_entity_id")
-      .eq(user_entity_id)
-      // .and("status") // we actually want to see all bids, even the rejected ones the user placed.
-      // .eq(BID_ACTIVE)
-      .return.all();
-
+    .where("user_entity_id")
+    .eq(user_entity_id)
+    // .and("status") // we actually want to see all bids, even the rejected ones the user placed.
+    // .eq(BID_ACTIVE)
+    .return.all();
+    
     const alreadyRetrievedLots: any[] = [];
     const alreadyRetrievedAuctions: any[] = [];
-
+    
     for (const bidForUser of bidsForUser) {
       bidForUser.entity_id = bidForUser[EntityId as any];
-
+      
       let lot = null;
       if (
         alreadyRetrievedLots.findIndex(
@@ -698,13 +899,13 @@ export class BidService3 {
         if (lot?.auction_entity_id) {
           // get the highest bid for the lot.
           const highestBidForLot = await BidRepository.search() //
-            .where("lot_entity_id")
-            .eq(bidForUser.lot_entity_id.toString())
-            .and("status")
-            .eq(BID_ACTIVE) // only active bids can be the highest bid
-            .sortBy("amount", "DESC")
-            .return.first();
-
+          .where("lot_entity_id")
+          .eq(bidForUser.lot_entity_id.toString())
+          .and("status")
+          .eq(BID_ACTIVE) // only active bids can be the highest bid
+          .sortBy("amount", "DESC")
+          .return.first();
+          
           lot.entity_id = lot[EntityId as any];
           lot.bids = [];
           lot.highest_bid = highestBidForLot; // and this can be null, or any other user's bid
@@ -717,7 +918,7 @@ export class BidService3 {
           (x) => x[EntityId as any] === bidForUser.lot_entity_id.toString()
         );
       }
-
+      
       // admin might have deleted the lot, so we need to perform a truthy check
       if (lot) {
         let auction = null;
@@ -742,7 +943,7 @@ export class BidService3 {
             (x) => x[EntityId as any] === lot.auction_entity_id.toString()
           );
         }
-
+        
         // admin might have deleted the auction, so we need to perform a truthy check
         if (auction) {
           if (
@@ -778,7 +979,7 @@ export class BidService3 {
         }
       }
     }
-
+    
     return alreadyRetrievedAuctions;
   }
 }
