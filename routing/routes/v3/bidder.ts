@@ -366,6 +366,8 @@ router.get(
   celebrate({
     [Segments.QUERY]: Joi.object({
       client_entity_id: Joi.string().required(),
+      page: Joi.string().required(),
+      limit: Joi.string().required(),
     }),
   }),
   // isAuthorized,
@@ -374,9 +376,8 @@ router.get(
   async (req: any, res: Response) => {
     try {
       const { query, user_details } = req;
-      const { client_entity_id } = query;
       const response = await bidderService.unregisteredBiddersForClient(
-        client_entity_id
+        query
       );
       return res
         .json(

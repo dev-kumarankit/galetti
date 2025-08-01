@@ -208,20 +208,42 @@ export class UserService3 {
     }
   }
 
-  public async usersForClient(client_entity_id: string) {
-    const foundUsers = await UserRepository.search() //
-      .where("client_entity_id")
-      .eq(client_entity_id)
-      .return.all();
+public async usersForClient(queryParams: any) {
+  const { client_entity_id, page = 1, limit = 10 } = queryParams;
 
-    // new array where we dont return the password and salt
-    const users = foundUsers.map((u) => {
-      const { password, salt, ...rest } = u;
-      return { ...rest, entity_id: u[EntityId as any] };
-    });
+  // Parse and clamp values
+  const pageNumber = parseInt(page, 10);
+  const rawLimit = parseInt(limit, 10);
+  const limitNumber = Math.min(rawLimit, 100); // max 100
+  const offset = (pageNumber - 1) * limitNumber;
 
-    return users;
-  }
+  // Get total number of matching users
+  const totalRecords = await UserRepository.search()
+    .where("client_entity_id")
+    .eq(client_entity_id)
+    .return.count();
+  const totalPages = Math.ceil(totalRecords / limitNumber);
+  // Get paginated users
+  const foundUsers = await UserRepository.search()
+    .where("client_entity_id")
+    .eq(client_entity_id)
+    .page(offset, limitNumber);
+
+  // Strip password and salt
+  const users = foundUsers.map((u) => {
+    const { password, salt, ...rest } = u;
+    return { ...rest, entity_id: u[EntityId as any] };
+  });
+
+  return {
+    totalRecords,
+    page: pageNumber,
+    limit: limitNumber,
+    lastPage: totalPages,
+    users,
+  };
+}
+
 
   public async delete(user_entity_id: string) {
     const user = await UserRepository.fetch(user_entity_id);
