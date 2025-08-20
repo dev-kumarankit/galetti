@@ -19,6 +19,8 @@ const lotSchema = new Schema(
     date_from: { type: "date" },
     date_to: { type: "date" },
     updated_date_to: { type: "date" },
+    isAutoBidEnable : { type: "boolean" },
+    autoBidMinAmt : { type: "number" },
     // extra_data: { type: "string" },
     // vendor_bidding: { type: "string" },
   },

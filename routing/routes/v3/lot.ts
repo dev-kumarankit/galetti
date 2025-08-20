@@ -124,7 +124,10 @@ const lotCelebrate = {
         otherwise: Joi.number().optional().allow(null),
       }),
     }).optional(),
-  }).required(),
+  }).optional(),
+  isAutoBidEnable: Joi.boolean().optional(),
+  autoBidMinAmt: Joi.number().optional(),
+  
 };
 
 router.post(
@@ -295,13 +298,15 @@ router.get(
   celebrate({
     [Segments.QUERY]: Joi.object({
       auction_entity_id: Joi.string().required(),
+      user_entity_id: Joi.string().optional(),
     }),
   }),
   async (req: any, res: Response) => {
     try {
       const { auction_entity_id } = req.query;
+      const { user_entity_id } = req.query;
       
-      const response = await lotService.lotsWithBids(auction_entity_id);
+      const response = await lotService.lotsWithBids(auction_entity_id,user_entity_id);
       return res
       .json(success("Successfully fetched all lots with bids!", response))
       .status(200)

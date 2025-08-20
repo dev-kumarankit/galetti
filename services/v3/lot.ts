@@ -1,6 +1,7 @@
 import { Container, Service } from "typedi";
 import { EntityId } from "redis-om";
 import { ILot } from "../../models/lot";
+import { ABid, ABid } from "../../models/autobid";
 import { LotRepository } from "../../schemas/redis/lot";
 import ValidationError from "../../helpers/validation_error";
 import { AuctionRepository } from "../../schemas/redis/auction";
@@ -339,7 +340,7 @@ public async lotsForAuction(auction_entity_id: string, get_images = true) {
   return lots;
 }
 
-public async lotsWithBids(auction_entity_id: string) {
+public async lotsWithBids(auction_entity_id: string, user_entity_id:any) {
   const lots = await LotRepository.search() //
   .where("auction_entity_id")
   .eq(auction_entity_id)
@@ -349,13 +350,7 @@ public async lotsWithBids(auction_entity_id: string) {
   // Inject first image for each lot
   for (let lot of lots) {
     lot.entity_id = lot[EntityId as any];
-    
-    // const firstImage = await FileRepository.search() //
-    // .where("lot_entity_id")
-    // .eq(lot[EntityId as any])
-    // .sortBy("order", "ASC")
-    // .return.first();
-        const firstImage = await FileRepository.search() //
+    const firstImage = await FileRepository.search() //
     .where("lot_entity_id")
     .eq(lot[EntityId as any])
     .and("type")
@@ -380,8 +375,28 @@ public async lotsWithBids(auction_entity_id: string) {
       0,
       10
     );
-    // console.log("bidsForLot", bidsForLot);
     lot.bids = bidsForLot;
+    // console.log("bidsForLot", bidsForLot);
+    if(user_entity_id){
+      console.log("user_entity_iduser_entity_iduser_entity_iduser_entity_iduser_entity_id=",user_entity_id)
+      let query :ABid = {
+"lot_entity_id":lot[EntityId as any],
+"auction_entity_id":auction_entity_id,
+"user_entity_id":user_entity_id
+      }
+      const AutoBidsForLot = await this.bidService.getAutoBid(query);
+      lot.auto_bids_for_lot = (AutoBidsForLot && Object.keys(AutoBidsForLot).length > 0) 
+      ? AutoBidsForLot 
+      : null;
+      let sendRes = false;
+      if(AutoBidsForLot.status && (AutoBidsForLot.status== "true" ||AutoBidsForLot.status== true)){
+sendRes= true
+      }
+      lot.auto_bids_for_lot_status = (AutoBidsForLot && Object.keys(AutoBidsForLot).length > 0) 
+      ? sendRes:false;
+    }
+    
+    
   }
   
   return lots;
@@ -726,13 +741,13 @@ public async manualLotStatus(entity_id: string, status: string) {
 
 
 public async lotStatusUpdate(lotID) {
-    try {
-       const reponse =  await updateLotStatuses(lotID);
-        return reponse;
-    } catch (err) {
-        console.error(err);
-        return err
-    }
+  try {
+    const reponse =  await updateLotStatuses(lotID);
+    return reponse;
+  } catch (err) {
+    console.error(err);
+    return err
+  }
 };
 
 }

@@ -62,7 +62,6 @@ router.post(
           AuctionRepository.fetch(bidder?.registered_auction_id),
           // ClientRepository.fetch(data?.client_entity_id),
         ]);
-
         if (auctionData) {
           const emailData = {
             bidderName: `${user?.name} ${user?.surname}`,

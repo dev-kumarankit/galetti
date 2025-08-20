@@ -75,3 +75,8 @@ export async function updateLotStatuses(lotId?: any) {
         return return_data
     }
 }
+
+export async function AutoBid(lotId?: any) {
+    
+    
+}
