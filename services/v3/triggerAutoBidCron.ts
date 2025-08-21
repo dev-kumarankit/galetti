@@ -17,7 +17,7 @@ const eligibleLots = await LotRepository.search()
 
   if (eligibleLots.length === 0) return;
   for (const lot of eligibleLots) {
-    console.log("triggerAutoBidCron EntityId--",lot[EntityId])
-    await triggerAutoBidForLot(lot[EntityId]);
+    // console.log("triggerAutoBidCron EntityId--",lot[EntityId])
+    await triggerAutoBidForLot(lot[EntityId as any]);
   }
 }

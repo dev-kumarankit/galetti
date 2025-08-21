@@ -1,7 +1,7 @@
 import { Container, Service } from "typedi";
 import { EntityId } from "redis-om";
 import { ILot } from "../../models/lot";
-import { ABid, ABid } from "../../models/autobid";
+import { ABid } from "../../models/autobid";
 import { LotRepository } from "../../schemas/redis/lot";
 import ValidationError from "../../helpers/validation_error";
 import { AuctionRepository } from "../../schemas/redis/auction";
@@ -384,7 +384,7 @@ public async lotsWithBids(auction_entity_id: string, user_entity_id:any) {
 "auction_entity_id":auction_entity_id,
 "user_entity_id":user_entity_id
       }
-      const AutoBidsForLot = await this.bidService.getAutoBid(query);
+      const AutoBidsForLot:any = await this.bidService.getAutoBid(query);
       lot.auto_bids_for_lot = (AutoBidsForLot && Object.keys(AutoBidsForLot).length > 0) 
       ? AutoBidsForLot 
       : null;
