@@ -16,6 +16,11 @@ const lotSchema = new Schema(
     youtube_url: { type: "string" },
     lot_number: { type: "number", sortable: true },
     created_at: { type: "date" },
+    date_from: { type: "date" },
+    date_to: { type: "date" },
+    updated_date_to: { type: "date" },
+    isAutoBidEnable : { type: "boolean" },
+    autoBidMinAmt : { type: "number" },
     // extra_data: { type: "string" },
     // vendor_bidding: { type: "string" },
   },
@@ -26,7 +31,7 @@ const repo = new Repository(lotSchema, redisClient);
 repo.createIndex();
 
 /**
- * Redis schema repository for a Lot.
- */
+* Redis schema repository for a Lot.
+*/
 const LotRepository = repo;
 export { LotRepository };

@@ -170,6 +170,41 @@ export const getBody = (data, type) => {
 </body>
  
 </html>`,
+
+customEmail:`
+<table cellpadding="0" cellspacing="0" width="100%" style="font-family: Arial, sans-serif;">
+  <tr>
+    <td align="center" bgcolor="#ffffff" style="padding: 20px;">
+      <table cellpadding="0" cellspacing="0" width="600" style="border: 1px solid #ddd; background-color: #fff;">
+        <tr>
+          <td align="center" style="padding: 20px 0; background-color: #F04F23"">
+            <a href="https://galetti.chantlab.com/#/auctions">
+                <img src="https://storage.googleapis.com/auction_platform_local/BIDDER_01JQB2143J5YJ01FSZM6CDJ34B/Document/logosecondaryupdated.png" alt="Banner" width="160px" style="display:block;"/>
+              </a>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding: 20px; color: #000; font-size: 16px;">
+            <p>Dear ${data.bidderName}</p>
+            <p style="color: #d42c2c; font-weight: bold; font-size: 18px;">Welcome To Galetti!</p>
+            <p>
+         ${data.email_msg}
+            </p>
+            <hr style="margin: 20px 0;" />
+            <p style="font-weight: bold;">Auction Details:</p>
+            <p>Auction Name : ${data.actionHouseName}</p>
+            <p>Auction Date & Time : ${data.actioneeDateAndTime}</p>
+            <hr style="margin: 20px 0;" />
+            <p>For Any Further Queries Please Contact Us Directly ${data.actionHouseName}</p>
+            <p>Contact Email: ${data.email}</p>
+            <p style="margin-top: 30px;">Regards The Galetti Team</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+`
   };
 
   return body[type];

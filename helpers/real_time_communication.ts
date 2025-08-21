@@ -23,9 +23,10 @@ interface ILotStatus {
   lot_number: number;
   status: string;
   type: string;
-  highest_bid: any;
+  highest_bid?: any;
   reserve_price_check?:any
   reserve_price?:any;
+  lotUpdate?:any;
 }
 
 @Service()

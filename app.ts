@@ -7,7 +7,7 @@ import { CloudStorage } from "./integration/google/cloud_storage";
 import { initializeFirebaseAdmin } from "./config/firebase";
 import { initializeMongoDB } from "./integration/mongodb/mongodb";
 import { determineFlavor } from "./helpers/utils/determine_flavor";
-
+import "./services/v3/lotStatusCron";
 determineFlavor();
 
 console.info(`Starting API server!`);

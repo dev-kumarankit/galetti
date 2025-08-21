@@ -264,7 +264,7 @@ export class BidderService3 {
 
   public async biddersForClient({ client_entity_id, auction_entity_id }: any) {
     let bidders;
-
+console.log("client_entity_id, auction_entity_id",client_entity_id, auction_entity_id)
     if (auction_entity_id) {
       bidders = await BidderRepository.search()
         .where("client_entity_id")
