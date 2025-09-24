@@ -8,7 +8,6 @@ import { initializeFirebaseAdmin } from "./config/firebase";
 import { initializeMongoDB } from "./integration/mongodb/mongodb";
 import { determineFlavor } from "./helpers/utils/determine_flavor";
 import "./services/v3/lotStatusCron";
-import "./services/v3/exportRedis";
 import { generatePdf, sendEmailWithAttachment } from "./services/v3/generate_invoice";
 determineFlavor();
 
