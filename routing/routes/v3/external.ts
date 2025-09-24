@@ -79,16 +79,15 @@ router.get(
   celebrate({
     [Segments.QUERY]: Joi.object({
       user_entity_id: Joi.string().required(),
-      auction_entity_id: Joi.string().allow("").optional(),
     }),
   }),
   verifyApiCredentials,
   async (req: any, res: Response) => {
     try {
       const { query, decoded_api_credentials } = req;
-      const { user_entity_id,auction_entity_id } = query;
+      const { user_entity_id } = query;
 
-      const response = await externalService.bidder_status(decoded_api_credentials, user_entity_id,auction_entity_id);
+      const response = await externalService.bidder_status(decoded_api_credentials, user_entity_id);
 
       return res.json(success("Successfully fetched the bidder status!", response)).status(200).end();
     } catch (e) {

@@ -29,7 +29,7 @@ export class FirebaseService3 {
 
     if (existingToken) {
       // update the token for this device
-      savedToken = await FirebaseTokenRepository.save(existingToken[EntityId], {
+      savedToken = await FirebaseTokenRepository.save(existingToken[EntityId as any], {
         ...existingToken,
         token: token,
       });

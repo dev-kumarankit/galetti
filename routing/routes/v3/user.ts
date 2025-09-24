@@ -195,6 +195,7 @@ router.get(
       client_entity_id: Joi.string().required(),
       page: Joi.string().required(),
       limit: Joi.string().required(),
+      name: Joi.string().allow(null, "").empty("").optional(),
     }),
   }),
   async (req: any, res: Response) => {
@@ -218,7 +219,35 @@ router.get(
     }
   },
 );
-
+router.get(
+  "/auto_bid_users_for_client",
+  celebrate({
+    [Segments.QUERY]: Joi.object({
+      client_entity_id: Joi.string().required(),
+      auction_entity_id: Joi.string().optional(),
+       lot_entity_id: Joi.string().optional(),
+      // page: Joi.string().required(),
+      // limit: Joi.string().required(),
+    }),
+  }),
+  async (req: any, res: Response) => {
+    try {
+      const resp = await userService.autoBidUsersForClient(req.query);
+      return res.json(success("Successfully fetched all auto bid users!", resp)).status(200).end();
+    } catch (e) {
+      console.error("🔥 error:", e);
+      return res
+        .json(
+          failure({
+            message: `Failed to fetch all auto bid users!`,
+            e,
+          }),
+        )
+        .status(400)
+        .end();
+    }
+  },
+);
 router.delete(
   "/delete",
   celebrate({

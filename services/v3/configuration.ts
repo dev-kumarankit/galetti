@@ -47,17 +47,17 @@ export class ConfigurationService3 {
   }
 
   public async get(client_entity_id: string) {
-    const configurationMongo = await ConfigurationCollection.findOne({ client_entity_id });
+   // const configurationMongo = await ConfigurationCollection.findOne({ client_entity_id });
 
-    if (configurationMongo) {
-      return {
-        ...configurationMongo.toObject(), //
-        terms_contitions_md_text: configurationMongo.terms_conditions_md_text ?? "", // This "spelling mistake mapping" can be removed in the future after all apps has been updated.
-      };
-    } else {
+   // if (configurationMongo) {
+   //   return {
+   //     ...configurationMongo.toObject(), //
+   //     terms_contitions_md_text: configurationMongo.terms_conditions_md_text ?? "", // This "spelling mistake mapping" can be removed in the future after all apps has been updated.
+   //   };
+  //  } else {
       const configuration = await ConfigurationRepository.search().where("client_entity_id").eq(client_entity_id).return.first();
-
+	console.log(configuration,"configuration")
       return configuration;
-    }
+  //  }
   }
 }

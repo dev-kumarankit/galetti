@@ -55,7 +55,7 @@ export class ArchiveService3 {
       .eq(entity_id)
       .return.all();
     for (const lot of lots) {
-      lot._id = lot[EntityId];
+      lot._id = lot[EntityId as any];
     }
     await LotCollection.insertMany(lots);
     lots_archive_success = true;
@@ -67,7 +67,7 @@ export class ArchiveService3 {
       .eq(entity_id)
       .return.all();
     for (const file of auctionFiles) {
-      file._id = file[EntityId];
+      file._id = file[EntityId as any];
     }
     await FileCollection.insertMany(auctionFiles);
     auction_files_archive_success = true;
@@ -78,10 +78,10 @@ export class ArchiveService3 {
     for (const lot of lots) {
       const lotFiles = await FileRepository.search() //
         .where("lot_entity_id")
-        .eq(lot[EntityId])
+        .eq(lot[EntityId as any])
         .return.all();
       for (const file of lotFiles) {
-        file._id = file[EntityId];
+        file._id = file[EntityId as any];
       }
       allLotFiles.push(...lotFiles);
       await FileCollection.insertMany(lotFiles);
@@ -94,10 +94,10 @@ export class ArchiveService3 {
     for (const lot of lots) {
       const bids = await BidRepository.search() //
         .where("lot_entity_id")
-        .eq(lot[EntityId])
+        .eq(lot[EntityId as any])
         .return.all();
       for (const bid of bids) {
-        bid._id = bid[EntityId];
+        bid._id = bid[EntityId as any];
       }
       allBids.push(...bids);
       await BidCollection.insertMany(bids);
@@ -117,19 +117,19 @@ export class ArchiveService3 {
       multi.json.del(`AUCTION:${entity_id}`);
 
       for (const lot of lots) {
-        multi.json.del(`LOT:${lot[EntityId]}`);
+        multi.json.del(`LOT:${lot[EntityId as any]}`);
       }
 
       for (const file of auctionFiles) {
-        multi.json.del(`FILE:${file[EntityId]}`);
+        multi.json.del(`FILE:${file[EntityId as any]}`);
       }
 
       for (const file of allLotFiles) {
-        multi.json.del(`FILE:${file[EntityId]}`);
+        multi.json.del(`FILE:${file[EntityId as any]}`);
       }
 
       for (const bid of allBids) {
-        multi.json.del(`BID:${bid[EntityId]}`);
+        multi.json.del(`BID:${bid[EntityId as any]}`);
       }
 
       await multi.exec();
@@ -262,7 +262,7 @@ export class ArchiveService3 {
         const user = await UserRepository.fetch(bid.user_entity_id);
 
         bid.user = {
-          entity_id: user[EntityId],
+          entity_id: user[EntityId as any],
           name: user.name,
           surname: user.surname,
         };
@@ -332,7 +332,7 @@ export class ArchiveService3 {
     console.log("Restoring the auction", _id);
     await AuctionRepository.save({
       ...auction.toObject(),
-      [EntityId]: _id,
+      [EntityId as any]: _id,
       restored_at: new Date(),
       archived_at: null,
     });

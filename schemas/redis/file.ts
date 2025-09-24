@@ -29,7 +29,7 @@ const fileSchema = new Schema(
     //   },
     // },
   },
-  { dataStructure: "JSON" }
+  { dataStructure: "JSON" },
 );
 
 const repo = new Repository(fileSchema, redisClient);

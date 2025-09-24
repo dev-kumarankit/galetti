@@ -10,6 +10,7 @@ import { LotService3 } from "../../../services/v3/lot";
 import { BidService3 } from "../../../services/v3/bid";
 import { BID_STATUSES } from "../../../helpers/constants/bid_enums";
 import ValidationError from "../../../helpers/validation_error";
+import { triggerAutoBidCron } from "../../../services/v3/triggerAutoBidCron";
 
 const router = Router();
 const bidService = Container.get(BidService3);
@@ -22,6 +23,7 @@ router.post(
       user_entity_id: Joi.string().required(),
       amount: Joi.number().optional(),
       increment: Joi.number().optional(),
+      soft_time: Joi.number().optional(),
     })
       .or("amount", "increment")
       .xor("amount", "increment"),
@@ -361,6 +363,163 @@ router.get(
         )
         .status(400)
         .end();
+    }
+  }
+);
+
+
+router.post(
+  "/save_auto_bid",
+  celebrate({
+    [Segments.BODY]: Joi.object({
+      lot_entity_id: Joi.string().required(),
+      user_entity_id: Joi.string().required(),
+      max_amount: Joi.number().optional(),
+      increment_amount: Joi.number().optional(),
+      auction_entity_id:Joi.string().required(),
+      status:Joi.boolean().required(),
+      term_and_condition:Joi.boolean().required(),
+    })
+
+  }),
+  // isAuthorized,
+  async (req: any, res: Response) => {
+    try {
+      const { body, user_details } = req;
+      const response = await bidService.saveAutoBid(body);
+      triggerAutoBidCron()
+      return res
+        .json(success("Successfully saved autobid!", response))
+        .status(200)
+        .end();
+    } catch (e) {
+      console.error("🔥 error:", e);
+
+      if (e instanceof ValidationError) {
+        return res
+          .json(
+            failure({
+              message: e.message,
+            })
+          )
+          .status(400)
+          .end();
+      } else {
+        return res
+          .json(
+            failure({
+              message: "Failed to saved autobid!",
+              e,
+            })
+          )
+          .status(400)
+          .end();
+      }
+    }
+  }
+);
+
+
+router.get(
+  "/get_auto_bid",
+  celebrate({
+    // [Segments.BODY]: Joi.object({
+    //   lot_entity_id: Joi.string().required(),
+    //   user_entity_id: Joi.string().required(),
+    //   })
+      [Segments.QUERY]: Joi.object({
+        lot_entity_id: Joi.string().required(),
+      user_entity_id: Joi.string().required(),
+    }),
+
+  }),
+  // isAuthorized,
+  async (req: any, res: Response) => {
+    try {
+      // const { body, user_details } = req;
+      const { query } = req;
+      // const { user_entity_id,  } = query;
+      const response = await bidService.getAutoBid(query);
+      
+      return res
+        .json(success("Successfully fetch autobid!", response))
+        .status(200)
+        .end();
+    } catch (e) {
+      console.error("🔥 error:", e);
+
+      if (e instanceof ValidationError) {
+        return res
+          .json(
+            failure({
+              message: e.message,
+            })
+          )
+          .status(400)
+          .end();
+      } else {
+        return res
+          .json(
+            failure({
+              message: "Failed to fetch autobid!",
+              e,
+            })
+          )
+          .status(400)
+          .end();
+      }
+    }
+  }
+);
+
+
+router.put(
+  "/update_auto_bid",
+  celebrate({
+    [Segments.BODY]: Joi.object({
+      lot_entity_id: Joi.string().required(),
+      user_entity_id: Joi.string().required(),
+      max_amount: Joi.number().optional(),
+      increment_amount: Joi.number().optional(),
+      auction_entity_id:Joi.string().required(),
+      status:Joi.boolean().required(),
+      term_and_condition:Joi.boolean().required(),
+    })
+
+  }),
+  // isAuthorized,
+  async (req: any, res: Response) => {
+    try {
+      const { body, user_details } = req;
+      const response = await bidService.updateAutoBid(body);
+      triggerAutoBidCron()
+      return res
+        .json(success("Successfully updated autobid!", response))
+        .status(200)
+        .end();
+    } catch (e) {
+      console.error("🔥 error:", e);
+
+      if (e instanceof ValidationError) {
+        return res
+          .json(
+            failure({
+              message: e.message,
+            })
+          )
+          .status(400)
+          .end();
+      } else {
+        return res
+          .json(
+            failure({
+              message: "Failed to saved autobid!",
+              e,
+            })
+          )
+          .status(400)
+          .end();
+      }
     }
   }
 );

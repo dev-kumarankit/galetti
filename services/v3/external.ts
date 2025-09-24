@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import argon2 from "argon2";
+import argon2 from "@node-rs/argon2";
 import { Service } from "typedi";
 import { ClientRepository } from "../../schemas/redis/client";
 import { UserRepository } from "../../schemas/redis/user";
@@ -45,7 +45,7 @@ export class ExternalService3 {
 
     // 6 digit password string
     const tempPassword = Math.random().toString(36).slice(-6);
-
+    console.log(tempPassword, "tempPasswordtempPassword");
     await sendEmail({
       to: user.email.toString().trim(),
       subject: "Account Created",
@@ -83,7 +83,7 @@ export class ExternalService3 {
     });
 
     return {
-      user_entity_id: newUser[EntityId],
+      user_entity_id: newUser[EntityId as any],
     };
   }
 
@@ -108,7 +108,7 @@ export class ExternalService3 {
       .where("client_entity_id")
       .eq(existingUser.client_entity_id.toString())
       .and("user_entity_id")
-      .eq(existingUser[EntityId])
+      .eq(existingUser[EntityId as any])
       .return.first();
     if (existingBidder?.client_entity_id) {
       throw new ValidationError(`This user has already been registered as a bidder!`);
@@ -116,7 +116,7 @@ export class ExternalService3 {
 
     const bidder: any = {
       client_entity_id: existingUser.client_entity_id,
-      user_entity_id: existingUser[EntityId],
+      user_entity_id: existingUser[EntityId as any],
       is_verified: false,
       paddle_number: "<unset>",
       created_at: moment().tz("Africa/Johannesburg").unix(),
@@ -134,7 +134,7 @@ export class ExternalService3 {
 
     const obr = {
       // ...savedBidder,
-      bidder_entity_id: savedBidder[EntityId],
+      bidder_entity_id: savedBidder[EntityId as any],
       is_verified: savedBidder.is_verified,
       paddle_number: savedBidder.paddle_number,
     };
@@ -142,7 +142,7 @@ export class ExternalService3 {
     return obr;
   }
 
-  public async bidder_status(decoded_api_credentials: IApiCredentials, user_entity_id: string,auction_entity_id:any): Promise<any> {
+  public async bidder_status(decoded_api_credentials: IApiCredentials, user_entity_id: string): Promise<any> {
     const { api_key } = decoded_api_credentials;
 
     const existingApiCredential = await ApiCredentialRepository.search() //
@@ -159,7 +159,7 @@ export class ExternalService3 {
     }
 
     const bidderService = Container.get(BidderService3);
-    const statusResponse = await bidderService.status({client_entity_id:existingApiCredential.client_entity_id.toString(), user_entity_id,auction_entity_id});
+    const statusResponse = await bidderService.status({ client_entity_id: existingApiCredential.client_entity_id.toString(), user_entity_id });
     return {
       ...statusResponse,
       bidder: {

@@ -13,6 +13,7 @@ import { ClientRepository } from "../../schemas/redis/client";
 import moment from "moment";
 import { OTPRepository } from "../../schemas/redis/reset_password_otp";
 import { redisClient } from "../../integration/redis/redis";
+import { AutoBidRepository } from "../../schemas/redis/autobid";
 
 interface IUserWithTokenResponse {
   user: {
@@ -29,23 +30,23 @@ interface IUserWithTokenResponse {
 export class UserService3 {
   public async signUp(user: IUser): Promise<IUserWithTokenResponse> {
     const existingUser = await UserRepository.search() //
-      .where("client_entity_id")
-      .eq(user.client_entity_id)
-      .and("email")
-      .eq(user.email)
-      .and("role")
-      .eq("user")
-      .return.all();
-
+    .where("client_entity_id")
+    .eq(user.client_entity_id)
+    .and("email")
+    .eq(user.email)
+    .and("role")
+    .eq("user")
+    .return.all();
+    
     if (existingUser && existingUser.length > 0) {
       throw new ValidationError(`You already have an existing account.`);
     }
-
+    
     const salt = randomBytes(32);
     // const hashedPassword = await argon2.hash(user.password, {
     //   salt: salt,
     // });
-
+    
     const u: any = {
       ...user,
       role: "user",
@@ -53,17 +54,17 @@ export class UserService3 {
       // password: hashedPassword,
       created_at: moment().tz("Africa/Johannesburg").unix(),
     };
-
+    
     const userRepo = await UserRepository.save(u);
     const entityId = userRepo[EntityId as any];
-
+    
     const token = await generateTokenNew({
       entity_id: entityId,
       email: user.email,
       name: user.name,
       role: "user",
     });
-
+    
     return {
       user: {
         entity_id: entityId,
@@ -74,25 +75,25 @@ export class UserService3 {
       token: token,
     };
   }
-
+  
   public async create(user: IUser): Promise<any> {
     const existingUser = await UserRepository.search() //
-      .where("client_entity_id")
-      .eq(user.client_entity_id)
-      .and("email")
-      .eq(user.email)
-      .return.all();
-
+    .where("client_entity_id")
+    .eq(user.client_entity_id)
+    .and("email")
+    .eq(user.email)
+    .return.all();
+    
     if (existingUser && existingUser.length > 0) {
       throw new ValidationError(`User already exists.`);
     }
-
+    
     // const randomSalt = randomBytes(32);
     // const sixDigitPass = Math.floor(100000 + Math.random() * 900000); // 6 digit random number
     // const hashedPassword = await argon2.hash(sixDigitPass.toString(), {
     //   salt: randomSalt,
     // });
-
+    
     const u: any = {
       ...user,
       role: "user",
@@ -100,51 +101,51 @@ export class UserService3 {
       // password: hashedPassword,
       created_at: moment().tz("Africa/Johannesburg").unix(),
     };
-
+    
     const userRepo = await UserRepository.save(u);
     const entityId = userRepo[EntityId as any];
-
+    
     // return everything but exclude the salt and password
-
+    
     // const { salt, password, ...rest } = userRepo;
-
+    
     const {  ...rest } = userRepo;
-
+    
     return {
       ...rest,
       entity_id: entityId,
       // naked_password: sixDigitPass.toString(),
     };
   }
-
+  
   public async update(user_entity_id: string, entity: IUser): Promise<any> {
     const existingUser = await UserRepository.fetch(user_entity_id);
-
+    
     if (!existingUser) {
       throw new ValidationError(`Could not find user to update.`);
     }
-
+    
     console.log("existingUser", existingUser);
     console.log("entity", entity);
-
+    
     const updatedUser = await UserRepository.save(user_entity_id, {
       ...existingUser,
       ...entity,
       updated_at: moment().tz("Africa/Johannesburg").unix(),
     });
-
+    
     delete updatedUser.password;
     delete updatedUser.salt;
-
+    
     // return { ...updatedUser, entity_id: existingUser[EntityId as any] };
-
+    
     const token = await generateTokenNew({
       entity_id: existingUser[EntityId as any],
       email: updatedUser.email.toString(),
       name: updatedUser.name.toString(),
       role: "user",
     });
-
+    
     return {
       user: {
         // Note this returns the whole user object, but without the password and salt.
@@ -154,35 +155,35 @@ export class UserService3 {
       token: token,
     };
   }
-
+  
   public async logIn(email: string, password: string, client_entity_id: string): Promise<IUserWithTokenResponse> {
     const existingUser = await UserRepository.search() //
-      .where("client_entity_id")
-      .eq(client_entity_id)
-      .and("email")
-      .eq(email)
-      .return.first();
-
+    .where("client_entity_id")
+    .eq(client_entity_id)
+    .and("email")
+    .eq(email)
+    .return.first();
+    
     if (!existingUser) {
       throw new ValidationError(`User does not exist.`);
     }
-
+    
     // const validPassword = await argon2.verify(existingUser.password.toString(), password);
-
+    
     if (email) {
       // update last login date
       await UserRepository.save(existingUser[EntityId as any], {
         ...existingUser,
         last_login: moment().tz("Africa/Johannesburg").unix(),
       });
-
+      
       const token = await generateTokenNew({
         entity_id: existingUser[EntityId as any],
         email: existingUser.email.toString(),
         name: existingUser.name.toString(),
         role: "user",
       });
-
+      
       return {
         user: {
           entity_id: existingUser[EntityId as any],
@@ -196,10 +197,10 @@ export class UserService3 {
       throw new ValidationError(`Invalid credentials.`);
     }
   }
-
+  
   public async get(user_entity_id: string): Promise<any> {
     const user = await UserRepository.fetch(user_entity_id);
-
+    
     if (user) {
       const { password, salt, ...rest } = user;
       return { ...rest, entity_id: user[EntityId as any] };
@@ -207,86 +208,131 @@ export class UserService3 {
       throw new ValidationError(`Could not find user by entity id.`);
     }
   }
-
-public async usersForClient(queryParams: any) {
-  const { client_entity_id, page = 1, limit = 10 } = queryParams;
-
-  // Parse and clamp values
-  const pageNumber = parseInt(page, 10);
-  const rawLimit = parseInt(limit, 10);
-  const limitNumber = Math.min(rawLimit, 100); // max 100
-  const offset = (pageNumber - 1) * limitNumber;
-
-  // Get total number of matching users
-  const totalRecords = await UserRepository.search()
+  
+  public async usersForClient(queryParams: any) {
+    const { client_entity_id, page = 1, limit = 10 ,name=null } = queryParams;
+    
+    // Parse and clamp values
+    const pageNumber = parseInt(page, 10);
+    const rawLimit = parseInt(limit, 10);
+    const limitNumber = Math.min(rawLimit, 100); // max 100
+    const offset = (pageNumber - 1) * limitNumber;
+    const search_name = name;
+    // if(search_name){
+    //   return "jagveer search_name"+search_name
+    // }
+    // Get total number of matching users
+    // const totalRecords = await UserRepository.search()
+    // .where("client_entity_id")
+    // .eq(client_entity_id)
+    // .return.count();
+    // const totalPages = Math.ceil(totalRecords / limitNumber);
+    // // Get paginated users
+    // const foundUsers = await UserRepository.search()
+    // .where("client_entity_id")
+    // .eq(client_entity_id)
+    // .page(offset, limitNumber);
+    
+    let query = UserRepository.search()
     .where("client_entity_id")
-    .eq(client_entity_id)
-    .return.count();
-  const totalPages = Math.ceil(totalRecords / limitNumber);
-  // Get paginated users
-  const foundUsers = await UserRepository.search()
-    .where("client_entity_id")
-    .eq(client_entity_id)
-    .page(offset, limitNumber);
-
-  // Strip password and salt
-  const users = foundUsers.map((u) => {
-    const { password, salt, ...rest } = u;
-    return { ...rest, entity_id: u[EntityId as any] };
-  });
-
+    .eq(client_entity_id);
+    
+    if (search_name) {
+      query = query.and("name").matches(`*${search_name}*`);
+    }
+    
+    // Get total count
+    const totalRecords = await query.return.count();
+    const totalPages = Math.ceil(totalRecords / limitNumber);
+    
+    // Paginated results
+    const foundUsers = await query.page(offset, limitNumber);
+    
+    // Strip password and salt
+    const users = foundUsers.map((u) => {
+      const { password, salt, ...rest } = u;
+      return { ...rest, entity_id: u[EntityId as any] };
+    });
+    
+    return {
+      totalRecords,
+      page: pageNumber,
+      limit: limitNumber,
+      lastPage: totalPages,
+      users,
+    };
+  }
+  
+  
+  public async autoBidUsersForClient(queryParams: any) {
+    
+    const { auction_entity_id, lot_entity_id, page = 1, limit = 10 } = queryParams;
+    let searchQuery = AutoBidRepository.search();
+    if (auction_entity_id) {
+      searchQuery = searchQuery.where("auction_entity_id").eq(auction_entity_id);
+    }
+    if (lot_entity_id) {
+      searchQuery = searchQuery.where("lot_entity_id").eq(lot_entity_id);
+    }
+    const foundAutoBids = await searchQuery.all();
+    const userIds = [...new Set(foundAutoBids.map((a: any) => a.user_entity_id))];
+    
+    let foundUsers: any[] = [];
+    if (userIds.length > 0) {
+      const promises = userIds.map((entity_id) =>
+      UserRepository.fetch(entity_id)
+    );
+    foundUsers = (await Promise.all(promises)).filter(Boolean) as any[];
+  }
   return {
-    totalRecords,
-    page: pageNumber,
-    limit: limitNumber,
-    lastPage: totalPages,
-    users,
+    userList:foundUsers,
   };
+  
 }
 
 
-  public async delete(user_entity_id: string) {
-    const user = await UserRepository.fetch(user_entity_id);
-
-    if (user.client_entity_id) {
-      await UserRepository.remove(user_entity_id);
-      return true;
-    } else {
-      throw new ValidationError(`Could not find user to delete.`);
-    }
+public async delete(user_entity_id: string) {
+  const user = await UserRepository.fetch(user_entity_id);
+  
+  if (user.client_entity_id) {
+    await UserRepository.remove(user_entity_id);
+    return true;
+  } else {
+    throw new ValidationError(`Could not find user to delete.`);
   }
+}
 
-  async forgotEmailPassword(email: string): Promise<any> {
-    const user = await UserRepository.search() //
-      .where("email")
-      .eq(email)
-      .return.first();
-    if (!user?.client_entity_id) {
-      throw new Error("User not found.");
-    }
-
-    const client = await ClientRepository.fetch(user.client_entity_id.toString());
-    if (!client.name) {
-      throw new Error("Could not find the user's client.");
-    }
-
-    const token = jwt.sign(
-      { user_entity_id: user[EntityId as any], role: user.role },
-      process.env.JWT_SECRET ?? "", //
-      { expiresIn: `15m` },
-    );
-
-    const resetToken = await ResetTokenRepository.save({ reset_token: token, user_entity_id: user[EntityId as any] });
-    ResetTokenRepository.expire(resetToken[EntityId as any], 900); // 900 seconds = 15 minutes
-
-    const resetPasswordLink = `${process.env.WEBSITE_URL}/#/reset_password/${encodeURIComponent(resetToken.reset_token.toString())}`;
-    console.log("resetPasswordLink", resetPasswordLink);
-
-    try {
-      await sendEmail({
-        to: user.email.toString().trim(),
-        subject: "Reset Password",
-        body: `
+async forgotEmailPassword(email: string): Promise<any> {
+  const user = await UserRepository.search() //
+  .where("email")
+  .eq(email)
+  .return.first();
+  if (!user?.client_entity_id) {
+    throw new Error("User not found.");
+  }
+  
+  const client = await ClientRepository.fetch(user.client_entity_id.toString());
+  if (!client.name) {
+    throw new Error("Could not find the user's client.");
+  }
+  
+  const token = jwt.sign(
+    { user_entity_id: user[EntityId as any], role: user.role },
+    process.env.JWT_SECRET ?? "", //
+    { expiresIn: `15m` },
+  );
+  
+  const resetToken = await ResetTokenRepository.save({ reset_token: token, user_entity_id: user[EntityId as any] });
+  ResetTokenRepository.expire(resetToken[EntityId as any], 900); // 900 seconds = 15 minutes
+  
+  const resetPasswordLink = `${process.env.WEBSITE_URL}/#/reset_password/${encodeURIComponent(resetToken.reset_token.toString())}`;
+  console.log("resetPasswordLink", resetPasswordLink);
+  
+  try {
+    await sendEmail({
+      to: user.email.toString().trim(),
+      subject: "Reset Password",
+      body: `
           Hi ${user.name.toString().trim()},
           <br/>
           You have requested to reset your password.
@@ -306,85 +352,51 @@ public async usersForClient(queryParams: any) {
           <br/>
           ${client.name}
         `,
-      });
-
-      return "The reset password email has been sent.";
-    } catch (error) {
-      console.log("error", error);
-      throw new Error("The reset password email could not be sent.");
-    }
+    });
+    
+    return "The reset password email has been sent.";
+  } catch (error) {
+    console.log("error", error);
+    throw new Error("The reset password email could not be sent.");
   }
+}
 
-  async changeForgotPassword(userId: string, newPassword: string, resetToken: string): Promise<IUserWithTokenResponse> {
-    const user = await UserRepository.fetch(userId);
-
-    if (!user.client_entity_id) {
-      throw new ValidationError("User not found.");
-    }
-
-    // This automatically expires after 15 minutes, at time of writing.
-    const records = await ResetTokenRepository.search() //
-      .where("user_entity_id")
-      .eq(userId)
-      .and("reset_token")
-      .eq(resetToken)
-      .return.all();
-
-    if (records) {
-      const salt = randomBytes(32);
-      const hashedPassword = await argon2.hash(newPassword, { salt });
-      user.salt = salt.toString("hex");
-      user.password = hashedPassword;
-      // await userRecord.save();
-      await UserRepository.save(userId, user);
-
-      // const token = await generateToken(userObj);
-      const token = await generateTokenNew({
-        entity_id: user[EntityId as any],
-        email: user.email.toString(),
-        name: user.name.toString(),
-        role: user.role.toString(),
-      });
-
-      // Delete all reset tokens for this user.
-      for (const record of records) {
-        await ResetTokenRepository.remove(record[EntityId as any]);
-      }
-
-      return {
-        user: {
-          entity_id: user[EntityId as any],
-          name: user.name.toString(),
-          surname: user.surname.toString(),
-          email: user.email.toString(),
-        },
-        token: token,
-      };
-    } else {
-      throw new ValidationError("Reset token not found, has already been used, or has expired.");
-    }
+async changeForgotPassword(userId: string, newPassword: string, resetToken: string): Promise<IUserWithTokenResponse> {
+  const user = await UserRepository.fetch(userId);
+  
+  if (!user.client_entity_id) {
+    throw new ValidationError("User not found.");
   }
-
-  async changePassword(decodedToken: ITokenToGenerate, newPassword: string): Promise<IUserWithTokenResponse> {
-    const user = await UserRepository.fetch(decodedToken.entity_id);
-    if (!user.client_entity_id) {
-      throw new ValidationError("User not found.");
-    }
-
+  
+  // This automatically expires after 15 minutes, at time of writing.
+  const records = await ResetTokenRepository.search() //
+  .where("user_entity_id")
+  .eq(userId)
+  .and("reset_token")
+  .eq(resetToken)
+  .return.all();
+  
+  if (records) {
     const salt = randomBytes(32);
     const hashedPassword = await argon2.hash(newPassword, { salt });
     user.salt = salt.toString("hex");
     user.password = hashedPassword;
-
-    await UserRepository.save(user[EntityId as any], user);
-
+    // await userRecord.save();
+    await UserRepository.save(userId, user);
+    
+    // const token = await generateToken(userObj);
     const token = await generateTokenNew({
       entity_id: user[EntityId as any],
       email: user.email.toString(),
       name: user.name.toString(),
       role: user.role.toString(),
     });
-
+    
+    // Delete all reset tokens for this user.
+    for (const record of records) {
+      await ResetTokenRepository.remove(record[EntityId as any]);
+    }
+    
     return {
       user: {
         entity_id: user[EntityId as any],
@@ -394,33 +406,67 @@ public async usersForClient(queryParams: any) {
       },
       token: token,
     };
+  } else {
+    throw new ValidationError("Reset token not found, has already been used, or has expired.");
   }
+}
 
-  async forgotEmailPasswordOtp(email: string): Promise<any> {
-    const user = await UserRepository.search() //
-      .where("email")
-      .eq(email)
-      .return.first();
-    if (!user?.client_entity_id) {
-      throw new Error("User not found.");
-    }
+async changePassword(decodedToken: ITokenToGenerate, newPassword: string): Promise<IUserWithTokenResponse> {
+  const user = await UserRepository.fetch(decodedToken.entity_id);
+  if (!user.client_entity_id) {
+    throw new ValidationError("User not found.");
+  }
+  
+  const salt = randomBytes(32);
+  const hashedPassword = await argon2.hash(newPassword, { salt });
+  user.salt = salt.toString("hex");
+  user.password = hashedPassword;
+  
+  await UserRepository.save(user[EntityId as any], user);
+  
+  const token = await generateTokenNew({
+    entity_id: user[EntityId as any],
+    email: user.email.toString(),
+    name: user.name.toString(),
+    role: user.role.toString(),
+  });
+  
+  return {
+    user: {
+      entity_id: user[EntityId as any],
+      name: user.name.toString(),
+      surname: user.surname.toString(),
+      email: user.email.toString(),
+    },
+    token: token,
+  };
+}
 
-    const client = await ClientRepository.fetch(user.client_entity_id.toString());
-    if (!client.name) {
-      throw new Error("Could not find the user's client.");
-    }
-
-    // 6 digit otp
-    const otp = Math.floor(100000 + Math.random() * 900000);
-
-    const otpRecord = await OTPRepository.save({ otp: otp.toString(), user_entity_id: user[EntityId as any] });
-    OTPRepository.expire(otpRecord[EntityId as any], 900); // 900 seconds = 15 minutes
-
-    try {
-      await sendEmail({
-        to: user.email.toString().trim(),
-        subject: "Reset Password",
-        body: `
+async forgotEmailPasswordOtp(email: string): Promise<any> {
+  const user = await UserRepository.search() //
+  .where("email")
+  .eq(email)
+  .return.first();
+  if (!user?.client_entity_id) {
+    throw new Error("User not found.");
+  }
+  
+  const client = await ClientRepository.fetch(user.client_entity_id.toString());
+  if (!client.name) {
+    throw new Error("Could not find the user's client.");
+  }
+  
+  // 6 digit otp
+  const otp = Math.floor(100000 + Math.random() * 900000);
+  
+  const otpRecord = await OTPRepository.save({ otp: otp.toString(), user_entity_id: user[EntityId as any] });
+  OTPRepository.expire(otpRecord[EntityId as any], 900); // 900 seconds = 15 minutes
+  
+  try {
+    await sendEmail({
+      to: user.email.toString().trim(),
+      subject: "Reset Password",
+      body: `
           Hi ${user.name.toString().trim()},
           <br/>
           You have requested to reset your password.
@@ -437,130 +483,130 @@ public async usersForClient(queryParams: any) {
           <br/>
           ${client.name}
         `,
-      });
-
-      return "The reset password OTP email has been sent.";
-    } catch (error) {
-      console.log("error", error);
-      throw new Error("The reset password OTP email could not be sent.");
-    }
-  }
-
-  async changeForgotPasswordOtp(email: string, new_password: string, otp: string): Promise<IUserWithTokenResponse> {
-    const user = await UserRepository.search() //
-      .where("email")
-      .eq(email)
-      .return.first();
-    if (!user.client_entity_id) {
-      throw new Error("User not found.");
-    }
-
-    console.log("email", email);
-    console.log("new_password", new_password);
-    console.log("otp", otp);
-    const otpRecord = await OTPRepository.search() //
-      .where("user_entity_id")
-      .eq(user[EntityId as any])
-      .and("otp")
-      .eq(otp)
-      .return.first();
-
-    console.log("otpRecord", otpRecord);
-    if (otpRecord) {
-      const salt = randomBytes(32);
-      const hashedPassword = await argon2.hash(new_password, { salt });
-      user.salt = salt.toString("hex");
-      user.password = hashedPassword;
-      await UserRepository.save(user[EntityId as any], user);
-
-      // const token = await generateToken(userObj);
-      const token = await generateTokenNew({
-        entity_id: user[EntityId as any],
-        email: user.email.toString(),
-        name: user.name.toString(),
-        role: user.role.toString(),
-      });
-
-      // Delete the otp record.
-      await OTPRepository.remove(otpRecord[EntityId as any]);
-
-      return {
-        user: {
-          entity_id: user[EntityId as any],
-          name: user.name.toString(),
-          surname: user.surname.toString(),
-          email: user.email.toString(),
-        },
-        token: token,
-      };
-    } else {
-      throw new ValidationError("OTP not found, has already been used, or has expired.");
-    }
-  }
-
-  async deactivateAccount(user_entity_id: string, decoded_token: any): Promise<boolean> {
-    const { entity_id } = decoded_token;
-    if (user_entity_id !== entity_id) {
-      throw new ValidationError("You are not authorized to deactivate this account.");
-    }
-
-    const user = await UserRepository.fetch(user_entity_id);
-    if (!user.client_entity_id) {
-      throw new ValidationError("User not found.");
-    }
-
-    // add to deacticcation repository
-    // then delete user
-    const multi:any = redisClient.multi();
-
-    multi.json.del(`USER:${user_entity_id}`);
-    // preserve the user key (entity_id) in the deactivated user's list
-    multi.json.set(`DEACTIVATEDUSERS:${user[EntityId as any]}`, "$", {
-      ...user,
-      deactivated_at: moment().tz("Africa/Johannesburg").unix(),
     });
-
-    multi.exec();
-
-    return true;
+    
+    return "The reset password OTP email has been sent.";
+  } catch (error) {
+    console.log("error", error);
+    throw new Error("The reset password OTP email could not be sent.");
   }
+}
 
-  async reactivateAccount(user_entity_id: string): Promise<boolean> {
-    const deactivatedUser: any = await redisClient.json.get(`DEACTIVATEDUSERS:${user_entity_id}`);
-
-    if (!deactivatedUser.client_entity_id) {
-      throw new ValidationError("Could not find user to reactivate.");
-    }
-
-    const multi = redisClient.multi();
-
-    multi.json.del(`DEACTIVATEDUSERS:${user_entity_id}`);
-    multi.json.set(`USER:${user_entity_id}`, "$", {
-      ...deactivatedUser,
-      reactivated_at: moment().tz("Africa/Johannesburg").unix(),
-    });
-
-    multi.exec();
-
-    return true;
+async changeForgotPasswordOtp(email: string, new_password: string, otp: string): Promise<IUserWithTokenResponse> {
+  const user = await UserRepository.search() //
+  .where("email")
+  .eq(email)
+  .return.first();
+  if (!user.client_entity_id) {
+    throw new Error("User not found.");
   }
-
-  async adminAutoGenUserPassword(user_entity_id: string): Promise<string> {
-    const user = await UserRepository.fetch(user_entity_id);
-
-    if (!user.client_entity_id) {
-      throw new ValidationError("User not found.");
-    }
-
-    const generatedPass = Math.random().toString(36).slice(-6); // 6 digit random string
-
+  
+  console.log("email", email);
+  console.log("new_password", new_password);
+  console.log("otp", otp);
+  const otpRecord = await OTPRepository.search() //
+  .where("user_entity_id")
+  .eq(user[EntityId as any])
+  .and("otp")
+  .eq(otp)
+  .return.first();
+  
+  console.log("otpRecord", otpRecord);
+  if (otpRecord) {
     const salt = randomBytes(32);
-    const hashedPassword = await argon2.hash(generatedPass, { salt });
+    const hashedPassword = await argon2.hash(new_password, { salt });
     user.salt = salt.toString("hex");
     user.password = hashedPassword;
-
-    await UserRepository.save(user_entity_id, user);
-
-    return generatedPass;
+    await UserRepository.save(user[EntityId as any], user);
+    
+    // const token = await generateToken(userObj);
+    const token = await generateTokenNew({
+      entity_id: user[EntityId as any],
+      email: user.email.toString(),
+      name: user.name.toString(),
+      role: user.role.toString(),
+    });
+    
+    // Delete the otp record.
+    await OTPRepository.remove(otpRecord[EntityId as any]);
+    
+    return {
+      user: {
+        entity_id: user[EntityId as any],
+        name: user.name.toString(),
+        surname: user.surname.toString(),
+        email: user.email.toString(),
+      },
+      token: token,
+    };
+  } else {
+    throw new ValidationError("OTP not found, has already been used, or has expired.");
   }
+}
+
+async deactivateAccount(user_entity_id: string, decoded_token: any): Promise<boolean> {
+  const { entity_id } = decoded_token;
+  if (user_entity_id !== entity_id) {
+    throw new ValidationError("You are not authorized to deactivate this account.");
+  }
+  
+  const user = await UserRepository.fetch(user_entity_id);
+  if (!user.client_entity_id) {
+    throw new ValidationError("User not found.");
+  }
+  
+  // add to deacticcation repository
+  // then delete user
+  const multi:any = redisClient.multi();
+  
+  multi.json.del(`USER:${user_entity_id}`);
+  // preserve the user key (entity_id) in the deactivated user's list
+  multi.json.set(`DEACTIVATEDUSERS:${user[EntityId as any]}`, "$", {
+    ...user,
+    deactivated_at: moment().tz("Africa/Johannesburg").unix(),
+  });
+  
+  multi.exec();
+  
+  return true;
+}
+
+async reactivateAccount(user_entity_id: string): Promise<boolean> {
+  const deactivatedUser: any = await redisClient.json.get(`DEACTIVATEDUSERS:${user_entity_id}`);
+  
+  if (!deactivatedUser.client_entity_id) {
+    throw new ValidationError("Could not find user to reactivate.");
+  }
+  
+  const multi = redisClient.multi();
+  
+  multi.json.del(`DEACTIVATEDUSERS:${user_entity_id}`);
+  multi.json.set(`USER:${user_entity_id}`, "$", {
+    ...deactivatedUser,
+    reactivated_at: moment().tz("Africa/Johannesburg").unix(),
+  });
+  
+  multi.exec();
+  
+  return true;
+}
+
+async adminAutoGenUserPassword(user_entity_id: string): Promise<string> {
+  const user = await UserRepository.fetch(user_entity_id);
+  
+  if (!user.client_entity_id) {
+    throw new ValidationError("User not found.");
+  }
+  
+  const generatedPass = Math.random().toString(36).slice(-6); // 6 digit random string
+  
+  const salt = randomBytes(32);
+  const hashedPassword = await argon2.hash(generatedPass, { salt });
+  user.salt = salt.toString("hex");
+  user.password = hashedPassword;
+  
+  await UserRepository.save(user_entity_id, user);
+  
+  return generatedPass;
+}
 }

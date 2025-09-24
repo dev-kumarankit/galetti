@@ -1,7 +1,7 @@
 import { Repository, Schema } from "redis-om";
 import { redisClient } from "../../integration/redis/redis";
 
-const schemaName = "OTP";
+const schemaName = "+";
 
 const schema = new Schema(
   schemaName,

@@ -27,12 +27,12 @@ export class ReportingService3 {
 
     const usersForClient = await UserRepository.search() //
       .where("client_entity_id")
-      .eq(client[EntityId])
+      .eq(client[EntityId as any])
       .return.all();
 
     const biddersForClient = await BidderRepository.search() //
       .where("client_entity_id")
-      .eq(client[EntityId])
+      .eq(client[EntityId as any])
       .return.all();
 
     const lotsForAuction = await LotRepository.search() //
@@ -49,7 +49,7 @@ export class ReportingService3 {
       // Get all bids for the lot
       const bidsForLot = await BidRepository.search() //
         .where("lot_entity_id")
-        .eq(l[EntityId])
+        .eq(l[EntityId as any])
         .sortBy("amount", "DESC")
         .return.all();
 
@@ -57,7 +57,7 @@ export class ReportingService3 {
       numberOfBids += bidsForLot.length;
 
       for (const bid of bidsForLot) {
-        bid.entity_id = bid[EntityId];
+        bid.entity_id = bid[EntityId as any];
 
         // Check if this is a system user
         if (isSystemUser(bid.user_entity_id.toString())) {
@@ -87,7 +87,7 @@ export class ReportingService3 {
 
         // Otherwise proceed with the normal flow...
         // Join the user to the bid
-        const user = usersForClient.find((usr) => usr[EntityId] === bid.user_entity_id);
+        const user = usersForClient.find((usr) => usr[EntityId as any] === bid.user_entity_id);
         if (user) {
           delete user.password;
           delete user.salt;
@@ -110,7 +110,7 @@ export class ReportingService3 {
         bid.bidder = bidder;
       }
 
-      lotsBidsUsersBidders.push({ ...l, entity_id: l[EntityId], bids: bidsForLot });
+      lotsBidsUsersBidders.push({ ...l, entity_id: l[EntityId as any], bids: bidsForLot });
     }
 
     return {
@@ -119,7 +119,7 @@ export class ReportingService3 {
       highest_bids_combined: highestBidTotal,
       auction: {
         ...auction,
-        entity_id: auction[EntityId],
+        entity_id: auction[EntityId as any],
       }, //
       lots: lotsBidsUsersBidders,
     };
@@ -217,7 +217,7 @@ export class ReportingService3 {
     for (const lot of lots) {
       const highestBid = await BidRepository.search() //
         .where("lot_entity_id")
-        .eq(lot[EntityId])
+        .eq(lot[EntityId as any])
         .and("status")
         .eq(BID_ACTIVE)
         .sortBy("amount", "DESC")
@@ -225,7 +225,7 @@ export class ReportingService3 {
 
       const firstImage = await FileRepository.search() //
         .where("lot_entity_id")
-        .eq(lot[EntityId])
+        .eq(lot[EntityId as any])
         .and("type")
         .eq("Image")
         .sortBy("order", "ASC")
@@ -236,7 +236,7 @@ export class ReportingService3 {
           // ...lot,
           lot_number: lot.lot_number,
           title: lot.title,
-          entity_id: lot[EntityId],
+          entity_id: lot[EntityId as any],
           status: lot.status,
           images: [firstImage],
         },
@@ -274,7 +274,7 @@ export class ReportingService3 {
           obj.summary = {
             ...obj.summary,
             bidder: bidder && {
-              entity_id: bidder[EntityId],
+              entity_id: bidder[EntityId as any],
               paddle_number: bidder.paddle_number,
             },
             user: {
@@ -299,7 +299,7 @@ export class ReportingService3 {
     return {
       auction: {
         ...auction,
-        entity_id: auction[EntityId],
+        entity_id: auction[EntityId as any],
       },
       lots: lotsWithBids,
     };

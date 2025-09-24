@@ -31,7 +31,7 @@ export class FavoriteService3 {
     const lot = await LotRepository.fetch(savedFavorite.lot_entity_id.toString());
 
     return {
-      entity_id: lot[EntityId],
+      entity_id: lot[EntityId as any],
       ...lot,
     };
   }
@@ -49,11 +49,11 @@ export class FavoriteService3 {
       throw new Error("You have not favorited this lot in order to be able to remove it from your favorites!");
     }
 
-    await FavoriteRepository.remove(existingFavorite[EntityId]);
+    await FavoriteRepository.remove(existingFavorite[EntityId as any]);
 
     const lot = await LotRepository.fetch(existingFavorite.lot_entity_id.toString());
 
-    return lot[EntityId]; // return the entity_id of the removed lot
+    return lot[EntityId as any]; // return the entity_id of the removed lot
   }
 
   public async getFavorite(favorite: IFavoriteGet) {
@@ -72,7 +72,7 @@ export class FavoriteService3 {
 
     const objToReturn = {
       ...lot,
-      entity_id: lot[EntityId],
+      entity_id: lot[EntityId as any],
       images: await FileRepository.search() //
         .where("lot_entity_id")
         .eq(existingFavorite.lot_entity_id.toString())
@@ -107,7 +107,7 @@ export class FavoriteService3 {
 
       const objToReturn = {
         ...lot,
-        entity_id: lot[EntityId],
+        entity_id: lot[EntityId as any],
         images: firstImage ? [firstImage] : [], // array format for consistency
       };
 

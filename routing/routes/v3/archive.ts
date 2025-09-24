@@ -44,7 +44,6 @@ router.get(
   celebrate({
     [Segments.QUERY]: Joi.object({
       entity_id: Joi.string().required(),
-      user_entity_id: Joi.string().allow("").optional(),
     }),
   }),
   async (req: any, res: Response) => {

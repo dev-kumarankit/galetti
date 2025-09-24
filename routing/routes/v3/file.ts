@@ -19,24 +19,16 @@ router.post(
       lot_entity_id: Joi.string().optional().allow(null),
       bidder_entity_id: Joi.string().optional().allow(null),
       custom_name: Joi.string().optional().allow(null, ""),
-      other_info: Joi.string().optional().allow(null, ""),
+        other_info: Joi.string().optional().allow(null, ""),
       type: Joi.string().valid("Image", "Document").required(),
-    }).xor(
-      "auction_entity_id",
-      "lot_entity_id",
-      "user_entity_id",
-      "bidder_entity_id"
-    ), // At least one of these fields must be present, but not more than one.
+    }).xor("auction_entity_id", "lot_entity_id", "user_entity_id", "bidder_entity_id"), // At least one of these fields must be present, but not more than one.
   }),
   // isAuthorized,
   async (req: any, res: Response) => {
     try {
       const { files, body } = req;
       let result = await fileService.upload(body, files);
-      return res
-        .json(success("Successfully uploaded the file!", result))
-        .status(200)
-        .end();
+      return res.json(success("Successfully uploaded the file!", result)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
@@ -44,12 +36,12 @@ router.post(
           failure({
             message: `Failed to upload the file!`,
             e,
-          })
+          }),
         )
         .status(400)
         .end();
     }
-  }
+  },
 );
 
 router.post(
@@ -60,22 +52,14 @@ router.post(
       user_entity_id: Joi.string().optional().allow(null, ""),
       lot_entity_id: Joi.string().optional().allow(null, ""),
       bidder_entity_id: Joi.string().optional().allow(null, ""),
-    }).xor(
-      "auction_entity_id",
-      "lot_entity_id",
-      "user_entity_id",
-      "bidder_entity_id"
-    ), // At least one of these fields must be present, but not more than one.
+    }).xor("auction_entity_id", "lot_entity_id", "user_entity_id", "bidder_entity_id"), // At least one of these fields must be present, but not more than one.
   }),
   // isAuthorized,
   async (req: any, res: Response) => {
     try {
       const { body } = req;
       let results = await fileService.retrieve(body);
-      return res
-        .json(success("Successfully retrieved files!", results))
-        .status(200)
-        .end();
+      return res.json(success("Successfully retrieved files!", results)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
@@ -83,12 +67,12 @@ router.post(
           failure({
             message: `Failed to get the file!`,
             e,
-          })
+          }),
         )
         .status(400)
         .end();
     }
-  }
+  },
 );
 
 router.delete(
@@ -102,10 +86,7 @@ router.delete(
   async (req: any, res: Response) => {
     try {
       let result = await fileService.delete(req.body);
-      return res
-        .json(success("Successfully deleted the file!", result))
-        .status(200)
-        .end();
+      return res.json(success("Successfully deleted the file!", result)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
@@ -113,12 +94,12 @@ router.delete(
           failure({
             message: `Failed to delete the file!`,
             e,
-          })
+          }),
         )
         .status(400)
         .end();
     }
-  }
+  },
 );
 
 router.put(
@@ -130,7 +111,7 @@ router.put(
         Joi.object({
           entity_id: Joi.string().required(),
           order: Joi.number().required(),
-        })
+        }),
       ),
     }),
   }),
@@ -140,10 +121,7 @@ router.put(
 
       const fileService = Container.get(FileService3);
       let result = await fileService.saveOrder(ordered_files);
-      return res
-        .json(success("Successfully saved the files order!", result))
-        .status(200)
-        .end();
+      return res.json(success("Successfully saved the files order!", result)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
@@ -151,12 +129,12 @@ router.put(
           failure({
             message: `Failed to save the file's order!`,
             e,
-          })
+          }),
         )
         .status(400)
         .end();
     }
-  }
+  },
 );
 
 export { router as fileRouter };

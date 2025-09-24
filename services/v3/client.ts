@@ -30,7 +30,7 @@ export class ClientService3 {
     const newClient = await ClientRepository.save(client);
 
     newClient.token = await generateClientToken({
-      entity_id: newClient[EntityId],
+      entity_id: newClient[EntityId as any],
       name: client.name,
     });
 
@@ -38,7 +38,7 @@ export class ClientService3 {
 
     return {
       ...newClient,
-      entity_id: newClient[EntityId],
+      entity_id: newClient[EntityId as any],
     };
   }
 
@@ -57,7 +57,7 @@ export class ClientService3 {
 
     return {
       ...updatedClient,
-      entity_id: updatedClient[EntityId],
+      entity_id: updatedClient[EntityId as any],
     };
   }
 
@@ -66,7 +66,7 @@ export class ClientService3 {
 
     return {
       ...client,
-      entity_id: client[EntityId],
+      entity_id: client[EntityId as any],
     };
   }
 
@@ -78,7 +78,7 @@ export class ClientService3 {
     return clients.map((client) => {
       return {
         ...client,
-        entity_id: client[EntityId],
+        entity_id: client[EntityId as any],
       };
     });
   }
@@ -126,7 +126,7 @@ export class ClientService3 {
     await ApiCredentialRepository.save({
       ...credentials,
 
-      client_entity_id: client[EntityId],
+      client_entity_id: client[EntityId as any],
       note: `API credentials for ${client.name}`,
       created_at: moment().tz("Africa/Johannesburg").unix(),
     });
@@ -154,7 +154,7 @@ export class ClientService3 {
     }
 
     return {
-      entity_id: credentials[EntityId],
+      entity_id: credentials[EntityId as any],
       api_key: credentials.api_key,
       access_token: credentials.access_token,
     };
@@ -207,7 +207,7 @@ export class ClientService3 {
       .return.all();
 
     for (const sm of existingSocialMedia) {
-      await SocialMediaRepository.remove(sm[EntityId]);
+      await SocialMediaRepository.remove(sm[EntityId as any]);
     }
 
     // save new social media
@@ -234,7 +234,7 @@ export class ClientService3 {
     return socialMedia.map((sm) => {
       return {
         ...sm,
-        entity_id: sm[EntityId],
+        entity_id: sm[EntityId as any],
       };
     });
   }

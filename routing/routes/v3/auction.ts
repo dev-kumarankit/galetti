@@ -6,10 +6,15 @@ import { failure } from "../../../helpers/responses/failure";
 import { Container } from "typedi";
 import { AUCTION_STATUSES, AUCTION_TYPES } from "../../../helpers/constants/auction_enums";
 import { AuctionService3 } from "../../../services/v3/auction";
-
+import { sendCustomEmail } from "../../../helpers/utils/send_email";
+import { BidderService3 } from "../../../services/v3/bidder";
+import { getBody } from "../../../emails/emailBodyUser";
+import { UserRepository } from "../../../schemas/redis/user";
+import { AuctionRepository } from "../../../schemas/redis/auction";
+import moment from "moment";
 const router = Router();
 const auctionService = Container.get(AuctionService3);
-
+const bidderService = Container.get(BidderService3);
 const customJoi = Joi.extend((joi) => ({
   type: "isoDateTime",
   base: joi.string(),
@@ -29,11 +34,11 @@ const auctionCelebrate = {
   title: Joi.string().required(),
   description: Joi.string().required(),
   status: Joi.string()
-    .valid(...AUCTION_STATUSES)
-    .required(),
+  .valid(...AUCTION_STATUSES)
+  .required(),
   type: Joi.string()
-    .valid(...AUCTION_TYPES)
-    .required(),
+  .valid(...AUCTION_TYPES)
+  .required(),
   date_from: customJoi.isoDateTime().required(),
   date_to: customJoi.isoDateTime().required(),
   is_popular: Joi.boolean().optional().default(false),
@@ -52,7 +57,7 @@ const auctionCelebrate = {
       }),
     }).optional(),
   }).required(),
-
+  
   // DEPRECATED! kept for existing app to not crash. use `contact_details` below instead
   contacts: Joi.object({
     // DEPRECATED!
@@ -63,7 +68,7 @@ const auctionCelebrate = {
     whatsapp: Joi.string().required(),
     // DEPRECATED!
   }).optional(),
-
+  
   contact_details: Joi.object({
     email: Joi.string().required(),
     phone: Joi.object({
@@ -82,8 +87,8 @@ const auctionCelebrate = {
     latitude: Joi.string().required(),
     longitude: Joi.string().required(),
   })
-    .optional()
-    .allow(null),
+  .optional()
+  .allow(null),
 };
 
 router.post(
@@ -105,14 +110,14 @@ router.post(
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to create an auction!",
-            e,
-          }),
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to create an auction!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
     }
   },
 );
@@ -137,14 +142,14 @@ router.get(
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to retrieve auction!",
-            e,
-          }),
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to retrieve auction!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
     }
   },
 );
@@ -170,14 +175,14 @@ router.put(
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to update auction!",
-            e,
-          }),
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to update auction!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
     }
   },
 );
@@ -201,14 +206,14 @@ router.delete(
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to delete auction!",
-            e,
-          }),
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to delete auction!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
     }
   },
 );
@@ -221,27 +226,27 @@ router.get(
       user_entity_id: Joi.string().allow("").optional(),
     }),
   }),
-
+  
   // isAuthorized,
   // isAdmin,
   // attachCurrentUser,
   async (req: any, res: Response) => {
     try {
       const { query, user_details } = req;
-
+      
       const response = await auctionService.auctionsForClient(query);
       return res.json(success("Successfully retrieved all auctions!", response)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to retrieve all auctions!",
-            e,
-          }),
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to retrieve all auctions!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
     }
   },
 );
@@ -256,20 +261,20 @@ router.get(
   async (req: any, res: Response) => {
     try {
       const { query, user_details } = req;
-
+      
       const response = await auctionService.remainingTime(query.auction_entity_id);
       return res.json(success("Successfully retrieved auction's remaining time!", response)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to retrieve auction's remaining time!",
-            e,
-          }),
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to retrieve auction's remaining time!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
     }
   },
 );
@@ -284,27 +289,27 @@ router.get(
   async (req: any, res: Response) => {
     try {
       const { query, user_details } = req;
-
+      
       const response = await auctionService.hasExtendedLots(query.entity_id);
       return res.json(success("Successfully determined if the auction has extended lots!", response)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to determine if the auction has extended lots!",
-            e,
-          }),
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to determine if the auction has extended lots!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
     }
   },
 );
 
 /**
- * @deprecated !!!!! do not use "first_live_auction" any longer use "extended_auctions" instead
- **/
+* @deprecated !!!!! do not use "first_live_auction" any longer use "extended_auctions" instead
+**/
 router.get(
   "/first_live_auction",
   celebrate({
@@ -315,20 +320,20 @@ router.get(
   async (req: any, res: Response) => {
     try {
       const { query, user_details } = req;
-
+      
       const response = await auctionService.firstLiveAuction(query.client_entity_id);
       return res.json(success("Successfully retrieved the first live auction!", response)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to retrieve the first live auction!",
-            e,
-          }),
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to retrieve the first live auction!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
     }
   },
 );
@@ -343,20 +348,20 @@ router.get(
   async (req: any, res: Response) => {
     try {
       const { query, user_details } = req;
-
+      
       const response = await auctionService.extendedAuctions(query.client_entity_id);
       return res.json(success("Successfully retrieved extended auctions!", response)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to retrieve extended auctions!",
-            e,
-          }),
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to retrieve extended auctions!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
     }
   },
 );
@@ -371,20 +376,20 @@ router.post(
   async (req: any, res: Response) => {
     try {
       const { body, user_details } = req;
-
+      
       const response = await auctionService.manualStart(body.auction_entity_id);
       return res.json(success("Successfully manually set the auction to live!", response)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
-        .json(
-          failure({
-            message: "Failed to manually set the auction to live!",
-            e,
-          }),
-        )
-        .status(400)
-        .end();
+      .json(
+        failure({
+          message: "Failed to manually set the auction to live!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
     }
   },
 );
@@ -399,22 +404,168 @@ router.post(
   async (req: any, res: Response) => {
     try {
       const { body, user_details } = req;
-
+      
       const response = await auctionService.manualEnd(body.auction_entity_id);
       return res.json(success("Successfully manually set the auction to complete!", response)).status(200).end();
     } catch (e) {
       console.error("🔥 error:", e);
       return res
+      .json(
+        failure({
+          message: "Failed to manually set the auction to complete!",
+          e,
+        }),
+      )
+      .status(400)
+      .end();
+    }
+  },
+);
+
+
+router.post(
+  "/send_email",
+  celebrate({
+    [Segments.BODY]: Joi.object({
+      auction_entity_id: Joi.string().required(),
+      client_entity_id: Joi.string().required(),
+      email_from: Joi.string().required(),
+      email_from_name: Joi.string().required(),
+      email_reply_to: Joi.string().required(),
+      email_subject: Joi.string().required(),
+      email_msg: Joi.string().required(),
+    }),
+  }),
+  async (req: any, res: Response) => {
+    try {
+      // const { auction_entity_id,client_entity_id, email_from, ,email_reply_to,email_subject,email_msg } = req;
+      const { body } = req;
+      const bidders = await bidderService.biddersForClient(
+        {client_entity_id: body.client_entity_id,
+          auction_entity_id: body.auction_entity_id}, true
+        );
+        let personalizations:any = await Promise.all(
+          bidders.map(async (bidder) => {
+            // Fetch user + auction data for this bidder
+            const [user, auctionData] = await Promise.all([
+              UserRepository.fetch(bidder?.user_entity_id),
+              AuctionRepository.fetch(bidder?.registered_auction_id),
+            ]);
+            
+            const emailData = {
+              bidderName: `${user?.name} ${user?.surname}`,
+              bidderEmail: user?.email,
+              bidderPhoneNumber: `${user?.cell_phone?.calling_code} ${user?.cell_phone?.number}`,
+              actionHouseName: auctionData?.title,
+              lotNumber: "",
+              actioneerName: auctionData?.title,
+              auctionId: bidder?.registered_auction_id,
+              actioneeDateAndTime: `${moment(auctionData?.date_from).format(
+                "Do MMM YYYY, h:mm A"
+              )} - ${moment(auctionData?.date_to).format("Do MMM YYYY, h:mm A")}`,
+              actioneeLotNumber: "",
+              bidderNumber: "",
+              email:auctionData?.contact_details?.email,
+              email_msg:body?.email_msg
+            };
+            // Generate HTML using your template function
+            const templateHtml = await getBody(emailData, "customEmail");
+            
+            return {
+              to: [{ email: user?.email|| bidder.email }],
+              subject: body?.email_subject,
+              html: templateHtml, // Send raw HTML instead of SendGrid dynamic template
+              email_reply_to:body?.email_reply_to,
+              email_subject:body?.email_subject,
+              from_name:body?.email_from_name,
+              email_from:body?.email_from,
+            };
+          })
+          
+        );
+       
+        let options: any = {
+          // email_reply_to: body?.email_reply_to,
+          email_reply_to: body?.email_reply_to,
+          email_subject: body?.email_subject,
+          from_name: body?.email_from_name,
+          email_from: body?.email_from,
+          personalizations: personalizations
+        };
+        
+        let respo =   await sendCustomEmail(options)
+        return res.json(success("Email Sent Successfully", {personalizations})).status(200).end();
+      } catch (e) {
+        console.error("🔥 error:", e);
+        return res
         .json(
           failure({
-            message: "Failed to manually set the auction to complete!",
+            message: "Failed to Send Email!",
             e,
           }),
         )
         .status(400)
         .end();
-    }
-  },
-);
+      }
+    },
+  );
 
-export { router as auctionRouter };
+
+  router.post(
+  "/save_tutorial",
+  celebrate({
+    [Segments.BODY]: Joi.object({
+      url: Joi.string().required(),
+       client_entity_id: Joi.string().required(),
+    }),
+  }),
+  async (req: any, res: Response) => {
+    try {
+      const { body } = req;
+      const tutorial = await auctionService.saveUrl(body.url,body.client_entity_id);
+        return res.json(success("Url Saved Successfully", tutorial)).status(200).end();
+      } catch (e) {
+        console.error("🔥 error:", e);
+        return res
+        .json(
+          failure({
+            message: "Failed to save url!",
+            e,
+          }),
+        )
+        .status(400)
+        .end();
+      }
+    },
+  );
+
+    router.get(
+  "/get_tutorial",
+   celebrate({
+    [Segments.QUERY]: Joi.object({
+      client_entity_id: Joi.string().required(),
+    }),
+  }),
+  async (req: any, res: Response) => {
+    try {
+      console.log("reqreqreq",req.query.client_entity_id)
+       const {client_entity_id} = req?.query;
+
+      const auvtionUrl = await auctionService.getUrl(client_entity_id);
+        return res.json(success("Url fetched Successfully", auvtionUrl)).status(200).end();
+      } catch (e) {
+        console.error("🔥 error:", e);
+        return res
+        .json(
+          failure({
+            message: "Failed to Fetch url!",
+            e,
+          }),
+        )
+        .status(400)
+        .end();
+      }
+    },
+  );
+  export { router as auctionRouter };
+  

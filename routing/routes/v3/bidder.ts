@@ -62,7 +62,6 @@ router.post(
           AuctionRepository.fetch(bidder?.registered_auction_id),
           // ClientRepository.fetch(data?.client_entity_id),
         ]);
-
         if (auctionData) {
           const emailData = {
             bidderName: `${user?.name} ${user?.surname}`,
@@ -366,8 +365,6 @@ router.get(
   celebrate({
     [Segments.QUERY]: Joi.object({
       client_entity_id: Joi.string().required(),
-      page: Joi.string().required(),
-      limit: Joi.string().required(),
     }),
   }),
   // isAuthorized,
@@ -376,8 +373,9 @@ router.get(
   async (req: any, res: Response) => {
     try {
       const { query, user_details } = req;
+      const { client_entity_id } = query;
       const response = await bidderService.unregisteredBiddersForClient(
-        query
+        client_entity_id
       );
       return res
         .json(

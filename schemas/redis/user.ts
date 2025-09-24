@@ -7,7 +7,7 @@ const schema = new Schema(
   schemaName,
   {
     client_entity_id: { type: "string" },
-    name: { type: "string" },
+    name: { type: "text" },
     // surname: { type: "string" },
     // cell_country_code: { type: "string" },
     // cell_number: { type: "string" },

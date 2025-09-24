@@ -7,4 +7,5 @@ export interface IBid extends Entity {
   status: string;
   auction_id?: string;
   created_at?: Date | number;
+  soft_time?:number;
 }

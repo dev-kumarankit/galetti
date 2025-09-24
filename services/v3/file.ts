@@ -11,15 +11,7 @@ export class FileService3 {
   private cloudStorage = Container.get(CloudStorage);
 
   public async upload(body, files) {
-    const {
-      auction_entity_id,
-      lot_entity_id,
-      user_entity_id,
-      bidder_entity_id,
-      custom_name,
-      type,
-      other_info,
-    } = body;
+    const { auction_entity_id, lot_entity_id, user_entity_id, bidder_entity_id, custom_name, type,other_info } = body;
 
     const file = files.file; // Can only upload one file at a time.
 
@@ -49,7 +41,7 @@ export class FileService3 {
     });
 
     const result = await FileRepository.save({
-      file_name: file.name?.replace(".heic", ".jpeg"),
+   file_name: file.name?.replace(".heic", ".jpeg"),
       file_extension:
         file.name.split(".").pop() == "heic"
           ? "jpeg"
@@ -63,12 +55,12 @@ export class FileService3 {
       user_entity_id,
       bidder_entity_id,
       created_at: moment().tz("Africa/Johannesburg").unix(),
-      other_info: other_info,
+            other_info: other_info,
     });
 
     const resultWithEntityId = {
       ...result,
-      entity_id: result[EntityId],
+      entity_id: result[EntityId as any],
     };
 
     return resultWithEntityId;
@@ -76,12 +68,7 @@ export class FileService3 {
 
   public async retrieve(body) {
     // Technically only one of these fields should be present, but not more than one. This is enforced by the route's celebration.
-    const {
-      auction_entity_id,
-      lot_entity_id,
-      user_entity_id,
-      bidder_entity_id,
-    } = body;
+    const { auction_entity_id, lot_entity_id, user_entity_id, bidder_entity_id } = body;
 
     let results = [];
     // Also these if's kind of ensures that only one of these fields is setting the results.
@@ -114,7 +101,7 @@ export class FileService3 {
       return {
         ...result,
         uploaded_file_url: encodeURI(result.uploaded_file_url),
-        entity_id: result[EntityId],
+        entity_id: result[EntityId as any],
       };
     });
 
@@ -138,7 +125,7 @@ export class FileService3 {
       console.error("🔥 could not delete file", e);
     }
 
-    await FileRepository.remove(file[EntityId]);
+    await FileRepository.remove(file[EntityId as any]);
 
     return true;
   }
@@ -157,9 +144,7 @@ export class FileService3 {
       multi.json.set(`FILE:${entity_id}`, "$", {
         ...file,
         order: order,
-        created_at: moment(file.created_at.toString())
-          .tz("Africa/Johannesburg")
-          .unix(),
+        created_at: moment(file.created_at.toString()).tz("Africa/Johannesburg").unix(),
         updated_at: moment().tz("Africa/Johannesburg").unix(),
       });
     }

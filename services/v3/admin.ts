@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import argon2 from "argon2";
+import argon2 from "@node-rs/argon2";
 import { Service } from "typedi";
 import { EntityId } from "redis-om";
 import ValidationError from "../../helpers/validation_error";
@@ -40,7 +40,7 @@ export class AdminService3 {
     };
 
     const userRepo = await AdminRepository.save(adminToCreate);
-    const entityId = userRepo[EntityId];
+    const entityId = userRepo[EntityId as any];
 
     const token = await generateTokenNew({
       entity_id: entityId,
@@ -78,14 +78,14 @@ export class AdminService3 {
 
       if (validPassword) {
         const token = await generateTokenNew({
-          entity_id: existingUser[EntityId],
+          entity_id: existingUser[EntityId as any],
           email: existingUser.email.toString(),
           name: existingUser.name.toString(),
           role: existingUser.role.toString(),
         });
 
         const adminObj: any = {
-          entity_id: existingUser[EntityId],
+          entity_id: existingUser[EntityId as any],
           name: existingUser.name.toString(),
           surname: existingUser.surname.toString(),
           email: existingUser.email.toString(),
@@ -119,17 +119,17 @@ export class AdminService3 {
     adminUser.salt = salt.toString("hex");
     adminUser.password = hashedPassword;
 
-    await AdminRepository.save(adminUser[EntityId], adminUser);
+    await AdminRepository.save(adminUser[EntityId as any], adminUser);
 
     const token = await generateTokenNew({
-      entity_id: adminUser[EntityId],
+      entity_id: adminUser[EntityId as any],
       email: adminUser.email.toString(),
       name: adminUser.name.toString(),
       role: adminUser.role.toString(),
     });
 
     const adminObj: any = {
-      entity_id: adminUser[EntityId],
+      entity_id: adminUser[EntityId as any],
       name: adminUser.name.toString(),
       surname: adminUser.surname.toString(),
       email: adminUser.email.toString(),
@@ -179,7 +179,7 @@ export class AdminService3 {
 
     return admins.map((admin) => {
       return {
-        entity_id: admin[EntityId],
+        entity_id: admin[EntityId as any],
         name: admin.name.toString(),
         surname: admin.surname.toString(),
         email: admin.email.toString(),
