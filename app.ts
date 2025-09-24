@@ -7,7 +7,9 @@ import { CloudStorage } from "./integration/google/cloud_storage";
 import { initializeFirebaseAdmin } from "./config/firebase";
 import { initializeMongoDB } from "./integration/mongodb/mongodb";
 import { determineFlavor } from "./helpers/utils/determine_flavor";
-
+import "./services/v3/lotStatusCron";
+import "./services/v3/exportRedis";
+import { generatePdf, sendEmailWithAttachment } from "./services/v3/generate_invoice";
 determineFlavor();
 
 console.info(`Starting API server!`);
@@ -23,7 +25,15 @@ rtc_di.initialize(httpServer);
 initializeMongoDB();
 initializeFirebaseAdmin();
 
-const port = parseInt(process.env.PORT) || 7002;
+async function main() {
+  console.log("⛔ sending invoice mail....⚠️ ⚠️ ⚠️ ⛔ ⚠️ ⚠️. uncommnet this ⛔")
+  //  sendEmailWithAttachment( );
+}
+
+main().catch(err => {
+  console.error("❌ Error:",err);
+});
+const port = parseInt(process.env.PORT as string) || 7002;
 const host = "0.0.0.0"; // localhost
 
 httpServer
