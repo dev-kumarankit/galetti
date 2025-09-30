@@ -69,6 +69,7 @@ export class LotService3 {
     console.log("Lot created", entityId);
     
     // this.repository.expire(entityId, 60 * 60); // 1 hour
+<<<<<<< HEAD
     const diff = moment(obj.date_from).diff(moment().tz("Africa/Johannesburg"), "milliseconds");
     console.log("jagveer--__---diff",diff);
     // Handle countdown socket
@@ -102,6 +103,9 @@ export class LotService3 {
     
     
     console.log("Lot created and bull activated", entityId);
+=======
+    
+>>>>>>> staging
     return {
       entity_id: entityId,
       ...obj,
@@ -268,7 +272,16 @@ export class LotService3 {
       console.error("Failed to fetch jobs:", err);
     }
   }
+  
+  console.log("Lot updated", entityId);
+  
+  return {
+    ...objToSave,
+    entity_id: entityId,
+  };
+}
 
+<<<<<<< HEAD
    const diff = moment(objToSave.date_from).diff(moment().tz("Africa/Johannesburg"), "milliseconds");
       console.log("lotlot-----diff",diff)
       // Handle countdown socket
@@ -310,6 +323,8 @@ export class LotService3 {
   };
 }
 
+=======
+>>>>>>> staging
 public async getLot(entity_id: string) {
   let lot = await LotRepository.fetch(entity_id);
   
@@ -447,6 +462,10 @@ public async lotsWithBids(auction_entity_id: string, user_entity_id:any) {
     lot.bids = bidsForLot;
     // console.log("bidsForLot", bidsForLot);
     if(user_entity_id){
+<<<<<<< HEAD
+=======
+      console.log("user_entity_iduser_entity_iduser_entity_iduser_entity_iduser_entity_id=",user_entity_id)
+>>>>>>> staging
       let query :ABid = {
 "lot_entity_id":lot[EntityId as any],
 "auction_entity_id":auction_entity_id,
@@ -458,7 +477,11 @@ public async lotsWithBids(auction_entity_id: string, user_entity_id:any) {
       : null;
       let sendRes = false;
       if(AutoBidsForLot.status && (AutoBidsForLot.status== "true" ||AutoBidsForLot.status== true)){
+<<<<<<< HEAD
         sendRes= true
+=======
+sendRes= true
+>>>>>>> staging
       }
       lot.auto_bids_for_lot_status = (AutoBidsForLot && Object.keys(AutoBidsForLot).length > 0) 
       ? sendRes:false;

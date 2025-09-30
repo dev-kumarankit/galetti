@@ -542,7 +542,6 @@ emailIncoice:`
 </body>
 </html>
 `
-
   };
 
   return body[type];
